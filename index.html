@@ -6,337 +6,447 @@
     <title>Lamumu Adventure</title>
     <style>
         body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
             margin: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            background-color: #e6f3e6;
-            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
         }
-        #gameCanvas {
-            border: 2px solid #333;
+        
+        h1 {
+            color: #4A235A;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 10px;
         }
-        #ui {
-            margin: 10px 0;
-            text-align: center;
+        
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            border: 5px solid #7D3C98;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            background: #E8F6F3;
         }
+        
+        #canvas {
+            background: #E8F6F3;
+            cursor: crosshair;
+        }
+        
+        #controls {
+            margin: 15px 0;
+            display: flex;
+            gap: 15px;
+        }
+        
         button {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #4CAF50;
+            padding: 12px 25px;
+            font-size: 18px;
+            background: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
         }
+        
         button:hover {
-            background-color: #45a049;
+            background: #388E3C;
+            transform: translateY(-2px);
+        }
+        
+        #level-info {
+            font-size: 24px;
+            color: #7D3C98;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            display: none;
+        }
+        
+        #message h2 {
+            color: #D35400;
+            margin-top: 0;
+            font-size: 36px;
+        }
+        
+        #message p {
+            font-size: 24px;
+            margin: 15px 0;
+        }
+        
+        .cow {
+            position: absolute;
+            transition: transform 0.2s;
+        }
+        
+        .goal {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #F1C40F;
+            border: 3px solid #D35400;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #D35400;
+        }
+        
+        .obstacle {
+            position: absolute;
+            background: #C0392B;
+            border: 2px solid #922B21;
+            border-radius: 10px;
+        }
+        
+        #cow-container {
+            position: absolute;
+            transition: all 0.05s linear;
+        }
+        
+        #neck-band {
+            position: absolute;
+            width: 50px;
+            height: 10px;
+            background: #E74C3C;
+            border-radius: 5px;
+            top: 35px;
+            left: 25px;
+            z-index: 2;
+        }
+        
+        #lamumu-text {
+            position: absolute;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            top: 36px;
+            left: 30px;
+            z-index: 3;
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="ui">
-        <h2>Lamumu Adventure - Level: <span id="levelDisplay">1</span></h2>
-        <p>Draw lines to guide Lamumu to the milk bucket! Avoid obstacles!</p>
-        <button onclick="playGame()">Play</button>
-        <button onclick="pauseGame()">Pause</button>
-        <button onclick="restartGame()">Restart</button>
-        <button onclick="resetLevel()">Reset Level</button>
+    <h1>Lamumu Adventure</h1>
+    <div id="level-info">Level: 1/5</div>
+    
+    <div id="game-container">
+        <canvas id="canvas" width="800" height="500"></canvas>
+        
+        <div id="cow-container">
+            <div id="neck-band"></div>
+            <div id="lamumu-text">Lamumu</div>
+            <div class="cow">🐮</div>
+        </div>
+        
+        <div id="message">
+            <h2>Congratulations!</h2>
+            <p>You've completed all 5 levels!</p>
+            <p>Lamumu is safe and happy! 🎉</p>
+            <button id="play-again">Play Again</button>
+        </div>
+    </div>
+    
+    <div id="controls">
+        <button id="draw-btn">Draw Line</button>
+        <button id="clear-btn">Clear Line</button>
+        <button id="start-btn">Start Moving</button>
     </div>
 
-    <!-- Audio elements -->
-    <audio id="drawSound" src="pencil.mp3"></audio>
-    <audio id="hitSound" src="moo.mp3"></audio>
-    <audio id="goalSound" src="bell.mp3"></audio>
-    <audio id="winSound" src="cheer.mp3"></audio>
-
     <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const levelDisplay = document.getElementById('levelDisplay');
-        const drawSound = document.getElementById('drawSound');
-        const hitSound = document.getElementById('hitSound');
-        const goalSound = document.getElementById('goalSound');
-        const winSound = document.getElementById('winSound');
-
-        // Game state
-        let currentLevel = 1;
-        let cow = { x: 50, y: 50, vx: 0, vy: 0, width: 40, height: 30 };
-        let goal = { x: 700, y: 500, width: 50, height: 50 };
-        let lines = [];
-        let isDrawing = false;
-        let currentLine = [];
-        let obstacles = [];
-        let gameWon = false;
-        let isPaused = true;
-        let gameLoopId = null;
-
-        // Level configurations (cow-themed)
-        const levels = [
-            {
-                cowStart: { x: 50, y: 50 },
-                goal: { x: 700, y: 500 },
-                obstacles: [{ x: 300, y: 500, width: 100, height: 20 }],
-                background: '#a0d8a0', // Grass field
-                obstacleColor: '#8B4513', // Wooden fence
-                obstacleType: 'fence'
-            },
-            {
-                cowStart: { x: 50, y: 50 },
-                goal: { x: 700, y: 400 },
-                obstacles: [{ x: 200, y: 500, width: 100, height: 20 }, { x: 400, y: 400, width: 100, height: 20 }],
-                background: '#d4a373', // Barn interior
-                obstacleColor: '#FF6347', // Hay bales
-                obstacleType: 'hay'
-            },
-            {
-                cowStart: { x: 50, y: 50 },
-                goal: { x: 700, y: 300 },
-                obstacles: [{ x: 250, y: 450, width: 100, height: 20 }, { x: 450, y: 350, width: 100, height: 20 }],
-                background: '#b0e0e6', // Pond area
-                obstacleColor: '#4682B4', // Mud pits
-                obstacleType: 'mud'
-            },
-            {
-                cowStart: { x: 50, y: 50 },
-                goal: { x: 700, y: 200 },
-                obstacles: [{ x: 200, y: 400, width: 150, height: 20 }, { x: 400, y: 300, width: 150, height: 20 }],
-                background: '#98fb98', // Meadow
-                obstacleColor: '#6B8E23', // Bushes
-                obstacleType: 'bush'
-            },
-            {
-                cowStart: { x: 50, y: 50 },
-                goal: { x: 700, y: 100 },
-                obstacles: [{ x: 150, y: 500, width: 100, height: 20 }, { x: 300, y: 400, width: 100, height: 20 }, { x: 500, y: 300, width: 100, height: 20 }],
-                background: '#f0e68c', // Hayfield
-                obstacleColor: '#FFD700', // Hay stacks
-                obstacleType: 'hay'
-            }
-        ];
-
-        // Initialize level
-        function initLevel(level) {
-            cow.x = levels[level - 1].cowStart.x;
-            cow.y = levels[level - 1].cowStart.y;
-            cow.vx = 0;
-            cow.vy = 0;
-            goal.x = levels[level - 1].goal.x;
-            goal.y = levels[level - 1].goal.y;
-            obstacles = levels[level - 1].obstacles;
-            lines = [];
-            gameWon = false;
-            levelDisplay.textContent = currentLevel;
-            canvas.style.backgroundColor = levels[level - 1].background;
-        }
-
-        // Game controls
-        function playGame() {
-            if (isPaused && !gameWon) {
-                isPaused = false;
-                gameLoop();
-            }
-        }
-
-        function pauseGame() {
-            isPaused = true;
-            cancelAnimationFrame(gameLoopId);
-        }
-
-        function restartGame() {
-            currentLevel = 1;
-            initLevel(currentLevel);
-            isPaused = true;
-            gameWon = false;
-            cancelAnimationFrame(gameLoopId);
-        }
-
-        function resetLevel() {
-            initLevel(currentLevel);
-        }
-
-        // Drawing lines
-        canvas.addEventListener('mousedown', (e) => {
-            if (!isPaused && !gameWon) {
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const drawBtn = document.getElementById('draw-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const startBtn = document.getElementById('start-btn');
+            const playAgainBtn = document.getElementById('play-again');
+            const levelInfo = document.getElementById('level-info');
+            const message = document.getElementById('message');
+            const cowContainer = document.getElementById('cow-container');
+            
+            let isDrawing = false;
+            let points = [];
+            let currentLevel = 1;
+            let gameActive = true;
+            let animationId = null;
+            let position = 0;
+            let speed = 2;
+            
+            // Level configurations
+            const levels = [
+                {
+                    start: { x: 50, y: 450 },
+                    goal: { x: 700, y: 450 },
+                    obstacles: []
+                },
+                {
+                    start: { x: 50, y: 450 },
+                    goal: { x: 700, y: 100 },
+                    obstacles: [
+                        { x: 200, y: 300, width: 200, height: 30 },
+                        { x: 500, y: 200, width: 200, height: 30 }
+                    ]
+                },
+                {
+                    start: { x: 50, y: 450 },
+                    goal: { x: 700, y: 450 },
+                    obstacles: [
+                        { x: 200, y: 350, width: 30, height: 200 },
+                        { x: 400, y: 0, width: 30, height: 200 },
+                        { x: 600, y: 250, width: 30, height: 200 }
+                    ]
+                },
+                {
+                    start: { x: 50, y: 450 },
+                    goal: { x: 700, y: 100 },
+                    obstacles: [
+                        { x: 150, y: 350, width: 200, height: 30 },
+                        { x: 450, y: 250, width: 200, height: 30 },
+                        { x: 250, y: 150, width: 200, height: 30 }
+                    ]
+                },
+                {
+                    start: { x: 50, y: 450 },
+                    goal: { x: 700, y: 450 },
+                    obstacles: [
+                        { x: 200, y: 300, width: 30, height: 200 },
+                        { x: 350, y: 0, width: 30, height: 200 },
+                        { x: 500, y: 300, width: 30, height: 200 },
+                        { x: 650, y: 0, width: 30, height: 200 }
+                    ]
+                }
+            ];
+            
+            // Initialize the game
+            initLevel();
+            
+            // Event listeners
+            drawBtn.addEventListener('click', function() {
                 isDrawing = true;
-                currentLine = [{ x: e.offsetX, y: e.offsetY }];
-                drawSound.play().catch(() => {});
+            });
+            
+            clearBtn.addEventListener('click', function() {
+                clearLine();
+            });
+            
+            startBtn.addEventListener('click', function() {
+                if (points.length > 1) {
+                    startMovement();
+                }
+            });
+            
+            playAgainBtn.addEventListener('click', function() {
+                currentLevel = 1;
+                levelInfo.textContent = `Level: ${currentLevel}/5`;
+                message.style.display = 'none';
+                initLevel();
+            });
+            
+            canvas.addEventListener('mousemove', function(e) {
+                if (isDrawing && gameActive) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    points.push({x, y});
+                    drawLine();
+                }
+            });
+            
+            canvas.addEventListener('mouseup', function() {
+                isDrawing = false;
+            });
+            
+            canvas.addEventListener('mouseleave', function() {
+                isDrawing = false;
+            });
+            
+            // Game functions
+            function initLevel() {
+                cancelAnimationFrame(animationId);
+                points = [];
+                position = 0;
+                gameActive = true;
+                
+                const level = levels[currentLevel - 1];
+                
+                // Draw level elements
+                drawLevel();
+                
+                // Position the cow
+                cowContainer.style.left = (level.start.x - 30) + 'px';
+                cowContainer.style.top = (level.start.y - 40) + 'px';
             }
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (isDrawing && !isPaused && !gameWon) {
-                currentLine.push({ x: e.offsetX, y: e.offsetY });
+            
+            function drawLevel() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                const level = levels[currentLevel - 1];
+                
+                // Draw goal
+                ctx.fillStyle = '#F1C40F';
+                ctx.beginPath();
+                ctx.arc(level.goal.x, level.goal.y, 30, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#D35400';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = '#D35400';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('GOAL', level.goal.x, level.goal.y);
+                
+                // Draw obstacles
+                ctx.fillStyle = '#C0392B';
+                level.obstacles.forEach(obs => {
+                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+                    ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+                });
+                
+                // Draw line if exists
+                if (points.length > 0) {
+                    drawLine();
+                }
             }
-        });
-
-        canvas.addEventListener('mouseup', () => {
-            if (isDrawing && currentLine.length > 1) {
-                lines.push(currentLine);
+            
+            function drawLine() {
+                drawLevel();
+                
+                if (points.length < 2) return;
+                
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                
+                ctx.strokeStyle = '#27AE60';
+                ctx.lineWidth = 5;
+                ctx.stroke();
             }
-            isDrawing = false;
-            currentLine = [];
-        });
-
-        // Physics and collision
-        function updateCow() {
-            if (isPaused || gameWon) return;
-
-            // Gravity
-            cow.vy += 0.5;
-            cow.x += cow.vx;
-            cow.y += cow.vy;
-
-            // Check for line collisions
-            let onLine = false;
-            for (let line of lines) {
-                for (let i = 0; i < line.length - 1; i++) {
-                    let p1 = line[i];
-                    let p2 = line[i + 1];
-                    if (cow.y + cow.height >= p1.y && cow.y + cow.height <= p1.y + 5 &&
-                        cow.x + cow.width > Math.min(p1.x, p2.x) && cow.x < Math.max(p1.x, p2.x)) {
-                        cow.y = p1.y - cow.height;
-                        cow.vy = 0;
-                        cow.vx = (p2.x > p1.x) ? 2 : -2;
-                        onLine = true;
-                        break;
+            
+            function clearLine() {
+                points = [];
+                drawLevel();
+            }
+            
+            function startMovement() {
+                if (!gameActive) return;
+                
+                const level = levels[currentLevel - 1];
+                
+                // Move along the line
+                if (position < points.length - 1) {
+                    const currentPoint = points[Math.floor(position)];
+                    const nextPoint = points[Math.floor(position) + 1];
+                    
+                    const dx = nextPoint.x - currentPoint.x;
+                    const dy = nextPoint.y - currentPoint.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    const progress = position - Math.floor(position);
+                    const cowX = currentPoint.x + dx * progress;
+                    const cowY = currentPoint.y + dy * progress;
+                    
+                    // Update cow position
+                    cowContainer.style.left = (cowX - 30) + 'px';
+                    cowContainer.style.top = (cowY - 40) + 'px';
+                    
+                    // Check for collision with obstacles
+                    if (checkCollision(cowX, cowY)) {
+                        gameOver();
+                        return;
+                    }
+                    
+                    // Check if reached goal
+                    const goalDX = cowX - level.goal.x;
+                    const goalDY = cowY - level.goal.y;
+                    const goalDist = Math.sqrt(goalDX * goalDX + goalDY * goalDY);
+                    
+                    if (goalDist < 30) {
+                        levelComplete();
+                        return;
+                    }
+                    
+                    position += speed / distance;
+                    
+                    animationId = requestAnimationFrame(startMovement);
+                } else {
+                    // Reached the end of the line
+                    gameOver();
+                }
+            }
+            
+            function checkCollision(x, y) {
+                const level = levels[currentLevel - 1];
+                
+                for (const obs of level.obstacles) {
+                    if (x > obs.x && x < obs.x + obs.width &&
+                        y > obs.y && y < obs.y + obs.height) {
+                        return true;
                     }
                 }
-                if (onLine) break;
+                
+                return false;
             }
-
-            if (!onLine) {
-                cow.vx = 0;
-            }
-
-            // Boundary checks
-            if (cow.y + cow.height > canvas.height) {
-                cow.y = canvas.height - cow.height;
-                cow.vy = 0;
-                cow.vx = 0;
-            }
-            if (cow.x < 0) cow.x = 0;
-            if (cow.x + cow.width > canvas.width) cow.x = canvas.width - cow.width;
-
-            // Check for obstacle collision
-            for (let obs of obstacles) {
-                if (cow.x < obs.x + obs.width && cow.x + cow.width > obs.x &&
-                    cow.y < obs.y + obs.height && cow.y + cow.height > obs.y) {
-                    hitSound.play().catch(() => {});
-                    resetLevel();
-                    return;
-                }
-            }
-
-            // Check for goal collision
-            if (cow.x < goal.x + goal.width && cow.x + cow.width > goal.x &&
-                cow.y < goal.y + goal.height && cow.y + cow.height > goal.y) {
-                goalSound.play().catch(() => {});
-                if (currentLevel < 5) {
-                    currentLevel++;
-                    initLevel(currentLevel);
-                } else {
-                    gameWon = true;
-                    winSound.play().catch(() => {});
-                    isPaused = true;
-                }
-            }
-        }
-
-        // Render game
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw lines
-            ctx.strokeStyle = '#8B4513';
-            ctx.lineWidth = 5;
-            for (let line of lines) {
-                ctx.beginPath();
-                ctx.moveTo(line[0].x, line[0].y);
-                for (let point of line) {
-                    ctx.lineTo(point.x, point.y);
-                }
-                ctx.stroke();
-            }
-
-            // Draw obstacles
-            for (let obs of obstacles) {
-                ctx.fillStyle = levels[currentLevel - 1].obstacleColor;
-                if (levels[currentLevel - 1].obstacleType === 'fence') {
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                    ctx.fillStyle = '#A0522D';
-                    ctx.fillRect(obs.x + 10, obs.y - 10, obs.width - 20, 10); // Fence top
-                } else if (levels[currentLevel - 1].obstacleType === 'hay') {
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                    ctx.fillStyle = '#FFFFE0';
-                    ctx.fillRect(obs.x + 5, obs.y + 5, 10, 10); // Hay detail
-                } else if (levels[currentLevel - 1].obstacleType === 'mud') {
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                    ctx.fillStyle = '#3C2F2F';
-                    ctx.fillRect(obs.x + 10, obs.y + 5, 5, 5); // Mud splash
-                } else if (levels[currentLevel - 1].obstacleType === 'bush') {
-                    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-                    ctx.fillStyle = '#228B22';
-                    ctx.fillRect(obs.x + 5, obs.y - 5, 10, 5); // Leaves
-                }
-            }
-
-            // Draw goal (milk bucket)
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
-            ctx.fillStyle = '#0000FF';
-            ctx.fillRect(goal.x + 10, goal.y + 10, 30, 30);
-            ctx.fillStyle = '#C0C0C0';
-            ctx.fillRect(goal.x + 5, goal.y - 10, 40, 10); // Bucket handle
-
-            // Draw cow
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(cow.x, cow.y, cow.width, cow.height);
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(cow.x + 5, cow.y + 5, 10, 10); // Left eye
-            ctx.fillRect(cow.x + 25, cow.y + 5, 10, 10); // Right eye
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(cow.x + 10, cow.y + 15, 5, 5); // Spot
-            ctx.fillRect(cow.x + 25, cow.y + 20, 5, 5); // Spot
-            ctx.fillStyle = '#FF69B4';
-            ctx.fillRect(cow.x + 10, cow.y + 25, 20, 5); // Lamumu band
-
-            // Draw current line while drawing
-            if (isDrawing && currentLine.length > 0) {
-                ctx.beginPath();
-                ctx.moveTo(currentLine[0].x, currentLine[0].y);
-                for (let point of currentLine) {
-                    ctx.lineTo(point.x, point.y);
-                }
-                ctx.stroke();
-            }
-
-            // Draw win message
-            if (gameWon) {
+            
+            function gameOver() {
+                gameActive = false;
+                cancelAnimationFrame(animationId);
+                
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#FFD700';
-                ctx.font = '40px Arial';
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '36px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('Congrats! You\'re a True Lamumuion!', canvas.width / 2, canvas.height / 2);
-                ctx.font = '20px Arial';
-                ctx.fillText('Click Restart to play again!', canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 30);
+                ctx.font = '24px Arial';
+                ctx.fillText('Click "Clear Line" and try again', canvas.width / 2, canvas.height / 2 + 30);
             }
-        }
-
-        // Game loop
-        function gameLoop() {
-            if (!isPaused) {
-                updateCow();
+            
+            function levelComplete() {
+                gameActive = false;
+                cancelAnimationFrame(animationId);
+                
+                if (currentLevel < 5) {
+                    currentLevel++;
+                    setTimeout(() => {
+                        levelInfo.textContent = `Level: ${currentLevel}/5`;
+                        initLevel();
+                    }, 1500);
+                } else {
+                    // All levels completed
+                    setTimeout(() => {
+                        message.style.display = 'block';
+                    }, 1000);
+                }
             }
-            draw();
-            gameLoopId = requestAnimationFrame(gameLoop);
-        }
-
-        // Start game
-        initLevel(1);
+        });
     </script>
 </body>
-  </html>
+</html>
