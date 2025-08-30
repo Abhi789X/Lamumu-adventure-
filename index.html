@@ -1,494 +1,343 @@
 <!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Lamumu Cow Puzzle (5 Levels)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Lamumu — Save the Cow (Draw to Door) • 5 Levels</title>
   <style>
-    :root {
-      --bg: #0b0f14;
-      --fg: #e8f0ff;
-      --muted: #a8b3c2;
-      --accent: #7dd3fc; /* sky */
-      --accent-2: #facc15; /* lamumu band */
-      --danger: #ef4444; /* spikes */
-      --card: #111827; /* canvas frame */
-    }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      background: radial-gradient(1200px 800px at 50% -10%, #101826, var(--bg));
-      color: var(--fg);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
-      display: flex; align-items: center; justify-content: center;
-      padding: 12px;
-    }
-    .wrap {
-      width: min(100vw, 900px);
-      aspect-ratio: 16/9; /* responsive 16:9 */
-      position: relative;
-    }
-    canvas {
-      width: 100%; height: 100%;
-      display: block;
-      background: linear-gradient(#0c1a2a, #0a1420 65%);
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
-    }
-    .hud {
-      position: absolute; inset: 0; pointer-events: none;
-      display: flex; align-items: flex-start; justify-content: space-between;
-      padding: 10px 12px;
-      font-weight: 600;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
-      user-select: none;
-    }
-    .badge { background: rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 10px; backdrop-filter: blur(6px); color: var(--fg); }/* Mobile controls */
-.controls { position: absolute; inset: 0; pointer-events: none; }
-.btn {
-  position: absolute; width: 64px; height: 64px; border-radius: 50%;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 0 20px rgba(255,255,255,0.06);
-  backdrop-filter: blur(6px);
-  pointer-events: auto;
-  touch-action: none; /* prevent double-tap zoom */
-  display: grid; place-items: center;
-  color: var(--muted); font-weight: 800;
-  user-select: none; -webkit-user-select: none;
-}
-.btn:active { transform: scale(0.98); }
-.btn-left { left: 14px; bottom: 14px; }
-.btn-right { left: 90px; bottom: 14px; }
-.btn-jump { right: 14px; bottom: 14px; width: 74px; height: 74px; }
+    :root{--bg:#0b1320;--card:#071427;--fg:#eef6ff;--muted:#a8b3c2;--accent:#7dd3fc;--lam:#facc15}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto}
+    body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#071426,#051018);color:var(--fg);padding:14px}
+    .wrap{width:min(980px,98vw);max-width:1000px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));border-radius:14px;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,0.5);}
+    .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .title{font-weight:800;font-size:18px}
+    .meta{color:var(--muted);font-size:13px}
+    #boardWrap{display:flex;gap:14px;flex-wrap:wrap}
+    /* Board */
+    .boardCard{background:linear-gradient(180deg,#0b2030,#081424);padding:12px;border-radius:12px;display:flex;flex-direction:column;align-items:center}
+    canvas{background:linear-gradient(180deg,#0d2333,#071221);border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
+    .controls{display:flex;flex-direction:column;gap:8px;margin-left:12px}
+    .btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);padding:10px 12px;border-radius:10px;color:var(--fg);cursor:pointer}
+    .hint{color:var(--muted);font-size:13px;margin-top:8px}/* Mobile touch controls overlay */
+.touch{display:none;position:relative;margin-top:8px}
+.dpad{display:flex;gap:8px}
+.dpad button{width:56px;height:56px;border-radius:10px;font-weight:800}
 
-/* Win modal */
-.modal {
-  position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.35);
-}
-.modal.open { display: flex; }
-.card {
-  width: min(92%, 520px);
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 18px; padding: 22px; text-align: center;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
-}
-.title { font-size: 22px; margin: 6px 0 12px; }
-.subtitle { color: var(--muted); margin-bottom: 18px; }
-.replay {
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
-  border: none; color: white; font-weight: 800;
-  padding: 12px 18px; border-radius: 12px; cursor: pointer;
-  box-shadow: 0 12px 30px rgba(129,140,248,0.35);
-}
-.replay:active { transform: translateY(1px); }
+.hud{display:flex;gap:8px;align-items:center}
+.badge{background:rgba(255,255,255,0.04);padding:8px 10px;border-radius:10px;font-weight:700}
 
-/* Helper hint on first run */
-.hint { position: absolute; left: 12px; bottom: 92px; color: #cbd5e1; font-size: 12px; opacity: .9; }
+/* Modal */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45)}
+.modal.open{display:flex}
+.card{background:linear-gradient(180deg,#0f2435,#08121a);border-radius:14px;padding:20px;text-align:center;color:var(--fg);width:min(92%,480px);box-shadow:0 30px 90px rgba(0,0,0,0.6)}
+.replay{margin-top:14px;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,#34d399,#38bdf8);font-weight:800;color:#04202a;cursor:pointer}
 
-@media (max-width: 560px) {
-  .btn { width: 58px; height: 58px; }
-  .btn-right { left: 82px; }
-  .btn-jump { width: 66px; height: 66px; }
-}
+@media (max-width:720px){.wrap{padding:10px}.controls{display:none}.touch{display:block}}
 
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <canvas id="game" width="1280" height="720" aria-label="Lamumu Cow Puzzle"></canvas><div class="hud">
-  <div class="badge" id="levelBadge">Level 1 / 5</div>
-  <div class="badge" id="statusBadge">Reach the gate ➜</div>
+  <div class="wrap" style="width:min(1000px,96vw);margin:auto">
+    <div class="top" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-weight:800;font-size:18px">Lamumu — Save the Cow (Draw to Door)</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="badge" id="levelBadge">Level 1 / 5</div>
+        <div class="badge" id="hintBadge">Draw a line to shield the cow and guide the key to the door →</div>
+        <button class="btn" id="resetBtn" style="margin-left:6px">Reset</button>
+      </div>
+    </div><div class="boardCard" style="display:flex;justify-content:center">
+  <canvas id="game" width="960" height="540" style="width:100%;height:auto;border-radius:14px"></canvas>
 </div>
 
-<div class="controls" aria-hidden="false">
-  <div class="btn btn-left" id="btnLeft">◀</div>
-  <div class="btn btn-right" id="btnRight">▶</div>
-  <div class="btn btn-jump" id="btnJump">⤒</div>
-  <div class="hint" id="hint">Controls: ◀ ▶ / A D, Jump: W / ↑ / Space, or touch buttons</div>
-</div>
-
-<div class="modal" id="winModal" role="dialog" aria-modal="true">
-  <div class="card">
-    <div style="font-size:40px">🎉</div>
-    <div class="title">Congratulations! You’re a true Lamumuion 🐮😍</div>
-    <div class="subtitle">You cleared all 5 levels. Want to go again?</div>
-    <button class="replay" id="replayBtn">Replay</button>
-  </div>
-</div>
-
+  </div>  <div class="modal" id="winModal" role="dialog" aria-modal="true">
+    <div class="card">
+      <div style="font-size:40px">🎉</div>
+      <div style="font-weight:800;margin-top:8px;text-wrap:balance">Congratulations! You’re a true Lamumuion 🐮😍</div>
+      <div style="color:var(--muted);margin-top:6px" id="winText">You cleared all 5 levels.</div>
+      <button class="replay" id="replayBtn">Replay</button>
+    </div>
   </div>  <script>
-    // --- Utility ---
-    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  ;(()=>{
+    // ===== Basic Styles for badges and buttons (for continuity) =====
+    const style = document.createElement('style');
+    style.textContent = `
+      .badge{background:rgba(255,255,255,.06);padding:6px 10px;border-radius:10px;font-weight:700}
+      .btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#eef6ff;padding:8px 12px;border-radius:10px;cursor:pointer}
+      .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
+      .modal.open{display:flex}
+      .card{background:linear-gradient(180deg,#0f2435,#08121a);border-radius:14px;padding:20px;text-align:center;color:#eef6ff;width:min(92%,520px);box-shadow:0 30px 90px rgba(0,0,0,.6)}
+      .replay{margin-top:14px;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,#34d399,#38bdf8);font-weight:800;color:#04202a;cursor:pointer}
+    `;
+    document.head.appendChild(style);
 
-    // --- Input ---
-    const keys = { left: false, right: false, jump: false };
-    const HOLD = { jump: false };
-
-    function bindKeyboard() {
-      const down = (e) => {
-        const k = e.key.toLowerCase();
-        if (["arrowleft","a"].includes(k)) keys.left = true;
-        if (["arrowright","d"].includes(k)) keys.right = true;
-        if (["w","arrowup"," "].includes(k)) { keys.jump = true; HOLD.jump = true; }
-      };
-      const up = (e) => {
-        const k = e.key.toLowerCase();
-        if (["arrowleft","a"].includes(k)) keys.left = false;
-        if (["arrowright","d"].includes(k)) keys.right = false;
-        if (["w","arrowup"," "].includes(k)) { HOLD.jump = false; }
-      };
-      window.addEventListener('keydown', down);
-      window.addEventListener('keyup', up);
-    }
-
-    function bindTouch() {
-      const left = document.getElementById('btnLeft');
-      const right = document.getElementById('btnRight');
-      const jump = document.getElementById('btnJump');
-      const set = (el, on, prop) => {
-        const start = (e) => { e.preventDefault(); keys[prop] = true; if (prop === 'jump') HOLD.jump = true; };
-        const end = (e) => { e.preventDefault(); keys[prop] = false; if (prop === 'jump') HOLD.jump = false; };
-        el.addEventListener('pointerdown', start);
-        el.addEventListener('pointerup', end);
-        el.addEventListener('pointercancel', end);
-        el.addEventListener('pointerleave', end);
-      };
-      set(left, false, 'left');
-      set(right, false, 'right');
-      set(jump, false, 'jump');
-    }
-
-    // --- Game World Types ---
-    class Rect { constructor(x,y,w,h){ this.x=x; this.y=y; this.w=w; this.h=h; } }
-    class MovingPlatform extends Rect { constructor(x,y,w,h,dx,range){ super(x,y,w,h); this.baseX=x; this.dx=dx; this.range=range; this.t=0; } step(dt){ this.t += dt; this.x = this.baseX + Math.sin(this.t*this.dx)*this.range; } }
-
-    // Level definition helper
-    function createLevels() {
-      // Coordinates use 1280x720 world space
-      const ground = (y=650)=>[ new Rect(0,y,1280,70) ];
-      const gate = (x,y)=>({ x, y, w: 40, h: 60 });
-      const spikesRow = (x,y,count=5, size=30)=> Array.from({length:count},(_,i)=>({x: x+i*size, y, w:size, h:size, spike:true}));
-
-      const L1 = {
-        start: {x: 80, y: 560},
-        solids: [ ...ground(), new Rect(240,520,180,20), new Rect(520,450,160,20), new Rect(760,380,180,20), new Rect(1040,320,160,20) ],
-        hazards: [],
-        movers: [],
-        goal: gate(1160,260),
-        tip: 'Jump across the platforms to reach the gate →'
-      };
-
-      const L2 = {
-        start: {x: 60, y: 560},
-        solids: [ ...ground(), new Rect(260,580,160,20), new Rect(520,510,160,20), new Rect(780,440,160,20), new Rect(1040,370,180,20) ],
-        hazards: [ ...spikesRow(430, 620, 5) ],
-        movers: [],
-        goal: gate(1160,310),
-        tip: 'Avoid spikes!'
-      };
-
-      const mover1 = new MovingPlatform(420, 520, 140, 16, 1.2, 120);
-      const L3 = {
-        start: {x: 60, y: 560},
-        solids: [ ...ground(), new Rect(220,600,160,20), new Rect(820,460,160,20), new Rect(1080,380,160,20) ],
-        hazards: [ ...spikesRow(600, 620, 8) ],
-        movers: [ mover1 ],
-        goal: gate(1160,320),
-        tip: 'Ride the moving platform.'
-      };
-
-      const L4 = {
-        start: {x: 80, y: 560},
-        solids: [ ...ground(660), new Rect(260,590,200,20), new Rect(560,520,200,20), new Rect(860,450,200,20) ],
-        hazards: [ ...spikesRow(490, 640, 5), ...spikesRow(790, 570, 5) ],
-        movers: [ new MovingPlatform(1080, 380, 140, 16, 1.8, 120) ],
-        goal: gate(1180,320),
-        tip: 'Mind the traps and time your jumps.'
-      };
-
-      const L5 = {
-        start: {x: 80, y: 560},
-        solids: [ ...ground(660), new Rect(240,600,160,20), new Rect(460,540,160,20), new Rect(680,480,160,20), new Rect(900,420,160,20), new Rect(1120,360,120,20) ],
-        hazards: [ ...spikesRow(360, 640, 6), ...spikesRow(820, 460, 5) ],
-        movers: [ new MovingPlatform(580, 560, 140, 16, 2.2, 160), new MovingPlatform(1020, 400, 120, 16, 2.4, 140) ],
-        goal: gate(1180,300),
-        tip: 'Final climb!'
-      };
-
-      return [L1,L2,L3,L4,L5];
-    }
-
-    // --- Player (Cow) ---
-    class Cow {
-      constructor(){ this.reset({x:80,y:560}); }
-      reset(pos){
-        this.x = pos.x; this.y = pos.y; this.w = 38; this.h = 34; // body size
-        this.vx = 0; this.vy = 0; this.onGround = false; this.facing = 1; this.coyote = 0; this.jumpBoost = 0; this.alive = true; 
-      }
-    }
-
-    // --- Engine Setup ---
+    // ===== Game Setup =====
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
 
-    let levels = createLevels();
-    let levelIndex = 0;
-    let level = levels[levelIndex];
-    let cow = new Cow();
+    const G = 1400; // gravity px/s^2
+    const TIME_STEP = 1/120;
 
-    const G = 2100; // gravity px/s^2
-    const MAX_XS = 340; // max horizontal speed
-    const MOVE_ACC = 2100; // ground acceleration
-    const AIR_ACC = 1400; // air control
-    const FRICTION = 0.86; // ground drag per frame (approx)
-    const JUMP_V = 760; // jump velocity
-    const SHORT_HOP_CUT = 0.55; // on jump release, reduce vy
+    // Entities
+    let cow, door, hive, keyBall, staticPlatforms, lines, bees, levelIndex=0, levels;
+    let drawing=false, currentLine=[]; // polyline while drawing
+    let totalDrawLen=0, maxDrawLen=1200; // pixels
+    let won=false, lost=false;
 
-    let last = performance.now();
-    let acc = 0; // fixed-step accumulator
+    function vec(x=0,y=0){return {x,y}}
 
-    function resetLevel(idx){
-      levelIndex = clamp(idx,0,levels.length-1);
-      level = levels[levelIndex];
-      cow.reset(level.start);
-      updateBadges();
-      document.getElementById('statusBadge').textContent = level.tip || '';
+    function dist(a,b){const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy)}
+
+    function segmentDistancePoint(a,b,p){
+      const vx=b.x-a.x, vy=b.y-a.y;
+      const wx=p.x-a.x, wy=p.y-a.y;
+      const c1=vx*wx+vy*wy; if(c1<=0) return Math.hypot(p.x-a.x,p.y-a.y);
+      const c2=vx*vx+vy*vy; if(c2<=c1) return Math.hypot(p.x-b.x,p.y-b.y);
+      const t=c1/c2; const proj={x:a.x+t*vx,y:a.y+t*vy}; return Math.hypot(p.x-proj.x,p.y-proj.y);
     }
 
-    function updateBadges(){
-      document.getElementById('levelBadge').textContent = `Level ${levelIndex+1} / ${levels.length}`;
+    function segmentsIntersect(a,b,c,d){
+      function ccw(p1,p2,p3){return (p3.y-p1.y)*(p2.x-p1.x)>(p2.y-p1.y)*(p3.x-p1.x)}
+      return (ccw(a,c,d)!==ccw(b,c,d)) && (ccw(a,b,c)!==ccw(a,b,d));
     }
 
-    // Simple AABB collision
-    function aabb(ax,ay,aw,ah,b){ return ax < b.x+b.w && ax+aw > b.x && ay < b.y+b.h && ay+ah > b.y; }
+    function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 
-    function step(dt){
-      // Inputs → accel
-      const ax = (keys.left? -1:0) + (keys.right? 1:0);
-      if (ax !== 0) cow.facing = Math.sign(ax);
+    // Simple circle physics with line collision
+    function stepBall(ball, dt){
+      ball.vy += G*dt;
+      ball.x += ball.vx*dt; ball.y += ball.vy*dt;
+      // collide with world bounds
+      if(ball.x<ball.r){ball.x=ball.r; ball.vx*=-0.5}
+      if(ball.x>W-ball.r){ball.x=W-ball.r; ball.vx*=-0.5}
+      if(ball.y>H-ball.r){ball.y=H-ball.r; ball.vy*=-0.4}
 
-      const accX = cow.onGround ? MOVE_ACC : AIR_ACC;
-      cow.vx += ax * accX * dt;
-
-      // Limit horizontal speed
-      cow.vx = clamp(cow.vx, -MAX_XS, MAX_XS);
-
-      // Gravity
-      cow.vy += G * dt;
-
-      // Jump (coyote time)
-      if (keys.jump && (cow.onGround || cow.coyote > 0)){
-        cow.vy = -JUMP_V; cow.onGround = false; cow.coyote = 0; keys.jump = false; // consume
-      }
-      if (!HOLD.jump && cow.vy < 0) cow.vy *= SHORT_HOP_CUT; // short hop on release
-
-      // Integrate
-      let nx = cow.x + cow.vx * dt;
-      let ny = cow.y + cow.vy * dt;
-
-      // Reset flags
-      let onGroundNext = false;
-
-      // Movers step
-      for (const m of level.movers) m.step(dt);
-
-      // Collide with solids (sweep separately X and Y)
-      // X axis
-      const solids = [...level.solids, ...level.movers];
-      let r = { x: nx, y: cow.y, w: cow.w, h: cow.h };
-      for (const s of solids){
-        if (aabb(r.x, r.y, r.w, r.h, s)){
-          if (cow.vx > 0) r.x = s.x - cow.w; else if (cow.vx < 0) r.x = s.x + s.w;
-          cow.vx = 0;
+      // collide with platforms
+      for(const p of staticPlatforms){
+        // platforms are rects {x,y,w,h}
+        const nx = clamp(ball.x, p.x, p.x+p.w);
+        const ny = clamp(ball.y, p.y, p.y+p.h);
+        const d = Math.hypot(ball.x-nx, ball.y-ny);
+        if(d < ball.r){
+          // push out along normal
+          const ang = Math.atan2(ball.y-ny, ball.x-nx);
+          ball.x = nx + Math.cos(ang)*(ball.r+0.1);
+          ball.y = ny + Math.sin(ang)*(ball.r+0.1);
+          // reflect
+          const nxv = Math.cos(ang), nyv = Math.sin(ang);
+          const dot = ball.vx*nxv + ball.vy*nyv;
+          ball.vx -= 1.6*dot*nxv; ball.vy -= 1.6*dot*nyv;
         }
       }
-      nx = r.x;
-
-      // Y axis
-      r = { x: nx, y: ny, w: cow.w, h: cow.h };
-      for (const s of solids){
-        if (aabb(r.x, r.y, r.w, r.h, s)){
-          if (cow.vy > 0){ // falling
-            r.y = s.y - cow.h; cow.vy = 0; onGroundNext = true;
-          } else if (cow.vy < 0){
-            r.y = s.y + s.h; cow.vy = 0;
+      // collide with drawn lines (treat as thick segments)
+      for(const L of lines){
+        for(let i=0;i<L.length-1;i++){
+          const a=L[i], b=L[i+1];
+          const d = segmentDistancePoint(a,b,ball);
+          if(d < ball.r){
+            // approximate normal as perpendicular to segment
+            const sx=b.x-a.x, sy=b.y-a.y; const len=Math.hypot(sx,sy)||1; const nx = -sy/len, ny = sx/len;
+            // push out
+            const overlap = ball.r - d + 0.2; ball.x += nx*overlap; ball.y += ny*overlap;
+            // reflect velocity
+            const dot = ball.vx*nx + ball.vy*ny;
+            ball.vx -= 1.8*dot*nx; ball.vy -= 1.8*dot*ny;
           }
         }
       }
-      ny = r.y;
+    }
 
-      // Apply friction if on ground and no input
-      if (onGroundNext && ax === 0) cow.vx *= FRICTION;
+    function spawnBee(x,y){
+      return {x,y,r:8,speed:110}
+    }
 
-      // Commit
-      cow.x = nx; cow.y = ny; cow.onGround = onGroundNext; cow.coyote = cow.onGround? 0.08 : Math.max(0, cow.coyote - dt);
-
-      // Hazards (spikes)
-      for (const h of level.hazards){
-        if (aabb(cow.x, cow.y, cow.w, cow.h, h)){
-          // small death blink
-          cow.alive = false; setTimeout(()=>{ cow.alive = true; resetLevel(levelIndex); }, 250);
-          return;
+    function stepBee(bee, dt){
+      // try move toward cow
+      const dir = Math.atan2(cow.y - bee.y, cow.x - bee.x);
+      const step = {x: bee.x + Math.cos(dir)*bee.speed*dt, y: bee.y + Math.sin(dir)*bee.speed*dt};
+      // blocked by drawn segments?
+      let blocked=false;
+      for(const L of lines){
+        for(let i=0;i<L.length-1;i++){
+          if(segmentsIntersect({x:bee.x,y:bee.y}, step, L[i], L[i+1])){ blocked=true; break; }
+        }
+        if(blocked) break;
+      }
+      if(!blocked){ bee.x = step.x; bee.y = step.y; }
+      // check platforms as barriers (simple)
+      for(const p of staticPlatforms){
+        if(bee.x>p.x-bee.r && bee.x<p.x+p.w+bee.r && bee.y>p.y-6 && bee.y<p.y+p.h+6){
+          // nudge back
+          bee.x -= Math.cos(dir)*bee.speed*dt; bee.y -= Math.sin(dir)*bee.speed*dt;
         }
       }
+      // hit cow?
+      if(dist(bee, cow) < bee.r + 18){ lost = true; }
+    }
 
-      // Goal
-      if (aabb(cow.x, cow.y, cow.w, cow.h, level.goal)){
-        if (levelIndex < levels.length-1) {
-          resetLevel(levelIndex+1);
-        } else {
-          // Win modal
+    function makeLevels(){
+      const basePlat = [
+        {x:0,y:H-20,w:W,h:20}, // ground
+      ];
+      return [
+        {
+          cow:{x:140,y:H-40}, door:{x:W-90,y:H-110,w:40,h:80}, hive:{x:W/2,y:80},
+          key:{x:80,y:120,vx:180,vy:0,r:10}, platforms:[...basePlat,{x:260,y:H-120,w:180,h:14}],
+          len:1200, tip:'Shield cow from bees & ramp the key into the door →'
+        },
+        {
+          cow:{x:120,y:H-40}, door:{x:W-120,y:H-180,w:40,h:80}, hive:{x:W-240,y:90},
+          key:{x:160,y:120,vx:130,vy:0,r:10}, platforms:[...basePlat,{x:340,y:H-180,w:160,h:14},{x:580,y:H-260,w:160,h:14}],
+          len:1100, tip:'Higher door. Draw a chute.'
+        },
+        {
+          cow:{x:160,y:H-40}, door:{x:W-160,y:H-260,w:40,h:80}, hive:{x:W/2,y:70},
+          key:{x:120,y:90,vx:160,vy:0,r:10}, platforms:[...basePlat,{x:260,y:H-230,w:160,h:14},{x:500,y:H-310,w:160,h:14},{x:740,y:H-230,w:160,h:14}],
+          len:1000, tip:'Zig-zag ramp needed.'
+        },
+        {
+          cow:{x:120,y:H-40}, door:{x:W-120,y:120,w:40,h:80}, hive:{x:W-300,y:H-200},
+          key:{x:W-840,y:80,vx:220,vy:0,r:10}, platforms:[...basePlat,{x:240,y:H-150,w:160,h:14},{x:520,y:H-220,w:160,h:14},{x:700,y:H-120,w:160,h:14}],
+          len:950, tip:'Door is above—draw walls to deflect.'
+        },
+        {
+          cow:{x:140,y:H-40}, door:{x:W-140,y:120,w:40,h:80}, hive:{x:W/2+60,y:100},
+          key:{x:90,y:70,vx:240,vy:0,r:10}, platforms:[...basePlat,{x:300,y:H-260,w:160,h:14},{x:540,y:H-320,w:160,h:14},{x:760,y:H-240,w:160,h:14},{x:880,y:200,w:120,h:14}],
+          len:900, tip:'Final: protect + funnel perfectly.'
+        }
+      ];
+    }
+
+    function reset(idx=0){
+      levels = makeLevels();
+      levelIndex = Math.max(0, Math.min(idx, levels.length-1));
+      const L = levels[levelIndex];
+      cow = {x:L.cow.x, y:L.cow.y};
+      door = {x:L.door.x, y:L.door.y, w:L.door.w, h:L.door.h, open:false};
+      hive = {x:L.hive.x, y:L.hive.y, t:0};
+      keyBall = {x:L.key.x, y:L.key.y, vx:L.key.vx, vy:L.key.vy, r:L.key.r};
+      staticPlatforms = L.platforms.slice();
+      lines = []; bees = [];
+      totalDrawLen = 0; maxDrawLen = L.len;
+      won=false; lost=false;
+      document.getElementById('levelBadge').textContent = `Level ${levelIndex+1} / ${levels.length}`;
+      document.getElementById('hintBadge').textContent = L.tip || '';
+    }
+
+    // ===== Drawing input (mouse & touch) =====
+    function toCanvasXY(e){
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches? e.touches[0].clientY : e.clientY) - rect.top;
+      const sx = x * (canvas.width/rect.width);
+      const sy = y * (canvas.height/rect.height);
+      return {x:sx, y:sy};
+    }
+
+    function startDraw(e){ if(won||lost) return; drawing=true; currentLine=[]; const p=toCanvasXY(e); currentLine.push(p); e.preventDefault(); }
+    function moveDraw(e){ if(!drawing) return; const p=toCanvasXY(e); const prev=currentLine[currentLine.length-1]; totalDrawLen += Math.hypot(p.x-prev.x, p.y-prev.y); if(totalDrawLen>maxDrawLen){ drawing=false; if(currentLine.length>1) lines.push(currentLine.slice()); return; } currentLine.push(p); e.preventDefault(); }
+    function endDraw(){ if(!drawing) return; drawing=false; if(currentLine.length>1) lines.push(currentLine.slice()); currentLine=[]; }
+
+    canvas.addEventListener('mousedown', startDraw); window.addEventListener('mousemove', moveDraw); window.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('touchstart', startDraw, {passive:false}); window.addEventListener('touchmove', moveDraw, {passive:false}); window.addEventListener('touchend', endDraw);
+
+    // ===== Game loop =====
+    let acc=0, last=performance.now();
+    function loop(now){
+      const dt = Math.min(0.033, (now-last)/1000); last=now; acc += dt;
+      while(acc >= TIME_STEP){ step(TIME_STEP); acc -= TIME_STEP; }
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function step(dt){
+      if(won||lost) return;
+      // spawn bees periodically
+      hive.t += dt; if(hive.t>0.6){ hive.t=0; bees.push(spawnBee(hive.x, hive.y)); }
+      // move bees
+      for(const b of bees) stepBee(b, dt);
+      // move key ball physics
+      stepBall(keyBall, dt);
+      // if key hits door, open & go next/win
+      if( keyBall.x>door.x && keyBall.x<door.x+door.w && keyBall.y>door.y && keyBall.y<door.y+door.h ){
+        door.open = true;
+        // level progression
+        if(levelIndex < levels.length-1){
+          const txt = document.getElementById('winText'); txt.textContent = 'Level cleared! Next level loading…';
           document.getElementById('winModal').classList.add('open');
+          setTimeout(()=>{ document.getElementById('winModal').classList.remove('open'); reset(levelIndex+1); }, 900);
+        } else {
+          // final
+          won = true; document.getElementById('winText').textContent = 'You cleared all 5 levels.'; document.getElementById('winModal').classList.add('open');
         }
       }
-
-      // Keep inside world bounds
-      cow.x = clamp(cow.x, -20, 1280- cow.w + 20);
-      if (cow.y > 900) resetLevel(levelIndex); // fell off
+      // if lost
+      if(lost){ const txt = document.getElementById('winText'); txt.textContent = 'Cow got stung! Restarting level…'; document.getElementById('winModal').classList.add('open'); setTimeout(()=>{ document.getElementById('winModal').classList.remove('open'); reset(levelIndex); lost=false; }, 900); }
     }
 
-    // --- Render ---
-    function drawGrid() {
-      const s = 40; ctx.save(); ctx.globalAlpha = 0.10; ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 1;
-      for (let x=0; x<1280; x+=s){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,720); ctx.stroke(); }
-      for (let y=0; y<720; y+=s){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(1280,y); ctx.stroke(); }
-      ctx.restore();
+    function draw(){
+      // sky bg
+      const g = ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#0b1e30'); g.addColorStop(1,'#071320'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+      // stars
+      ctx.save(); ctx.globalAlpha=0.2; for(let i=0;i<80;i++){ const x=(i*73)%W, y=(i*91)%H; ctx.fillStyle=(i%3?'#7dd3fc':'#e2e8f0'); ctx.fillRect(x+Math.sin(performance.now()*0.0006+i)*4, y, 2,2);} ctx.restore();
+
+      // platforms
+      for(const p of staticPlatforms){ ctx.fillStyle='#0e2236'; ctx.fillRect(p.x,p.y,p.w,p.h); ctx.strokeStyle='rgba(255,255,255,.06)'; ctx.strokeRect(p.x+0.5,p.y+0.5,p.w-1,p.h-1); }
+
+      // door
+      ctx.save(); ctx.fillStyle = door.open? '#22c55e':'#10b981'; ctx.fillRect(door.x,door.y,door.w,door.h); ctx.fillStyle = '#064e3b'; ctx.fillRect(door.x+6,door.y+6,door.w-12,door.h-12); ctx.restore();
+
+      // hive
+      ctx.save(); ctx.fillStyle='#f59e0b'; ctx.beginPath(); ctx.arc(hive.x,hive.y,16,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#78350f'; ctx.fillRect(hive.x-8,hive.y-4,16,8); ctx.restore();
+
+      // bees
+      ctx.fillStyle='#fde047'; for(const b of bees){ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#111827'; ctx.fillRect(b.x-3,b.y-2,6,4); ctx.fillStyle='#fde047'; }
+
+      // cow
+      drawCow(cow.x, cow.y);
+
+      // key ball
+      ctx.save(); ctx.fillStyle='#93c5fd'; ctx.beginPath(); ctx.arc(keyBall.x,keyBall.y,keyBall.r,0,Math.PI*2); ctx.fill(); ctx.restore();
+
+      // drawn lines
+      ctx.lineWidth = 6; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.strokeStyle = '#e5e7eb';
+      for(const L of lines){ ctx.beginPath(); ctx.moveTo(L[0].x,L[0].y); for(let i=1;i<L.length;i++) ctx.lineTo(L[i].x,L[i].y); ctx.stroke(); }
+      if(currentLine.length>1){ ctx.beginPath(); ctx.moveTo(currentLine[0].x,currentLine[0].y); for(let i=1;i<currentLine.length;i++) ctx.lineTo(currentLine[i].x,currentLine[i].y); ctx.stroke(); }
+
+      // draw lamumu length meter
+      const used = Math.min(1, totalDrawLen/maxDrawLen);
+      ctx.fillStyle='rgba(255,255,255,.08)'; ctx.fillRect(20,20,200,10); ctx.fillStyle='#7dd3fc'; ctx.fillRect(20,20,200*used,10); ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.strokeRect(20.5,20.5,199,9);
+      ctx.fillStyle='#a8b3c2'; ctx.font='12px system-ui, sans-serif'; ctx.fillText('Ink used', 20, 16);
     }
 
-    function drawLevel(){
-      // Parallax sky
-      const t = performance.now()*0.0002;
-      const grad = ctx.createLinearGradient(0,0,0,720);
-      grad.addColorStop(0, '#0d2035');
-      grad.addColorStop(1, '#0a1320');
-      ctx.fillStyle = grad; ctx.fillRect(0,0,1280,720);
-
-      // Floating stars
-      ctx.save(); ctx.globalAlpha = 0.25;
-      for (let i=0;i<60;i++){
-        const x = (i*201 % 1280); const y = (i*97 % 720);
-        ctx.fillStyle = i%3? '#7dd3fc' : '#e2e8f0';
-        ctx.fillRect((x + Math.sin(t+i)*8), (y + Math.cos(t*1.3+i)*4), 2, 2);
-      }
-      ctx.restore();
-
-      // Ground & platforms
-      for (const s of level.solids){
-        drawSolid(s);
-      }
-      for (const m of level.movers){
-        drawSolid(m, true);
-      }
-
-      // Spikes
-      for (const h of level.hazards){ drawSpike(h); }
-
-      // Gate
-      drawGate(level.goal);
-
-      // Cow
-      drawCow();
-
-      // Optional grid (debug)
-      // drawGrid();
+    function drawCow(x,y){
+      const w=40,h=34; const cx=x, cy=y;
+      // shadow
+      ctx.save(); ctx.globalAlpha=.25; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(cx, cy+12, 20, 6, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+      // body
+      ctx.fillStyle='#f8fafc'; ctx.fillRect(cx-18,cy-26,36,26);
+      // spots
+      ctx.fillStyle='#111827'; ctx.fillRect(cx-8,cy-20,10,8); ctx.fillRect(cx+6,cy-12,8,6);
+      // head
+      ctx.fillStyle='#f8fafc'; ctx.fillRect(cx+16,cy-20,16,14);
+      ctx.fillStyle='#111827'; ctx.fillRect(cx+22,cy-14,3,3);
+      ctx.fillStyle='#f9a8d4'; ctx.fillRect(cx+18,cy-8,7,5);
+      // legs
+      ctx.fillStyle='#e5e7eb'; ctx.fillRect(cx-14,cy,6,6); ctx.fillRect(cx+6,cy,6,6);
+      // Lamumu band
+      ctx.fillStyle='#facc15'; ctx.fillRect(cx-14, cy-24, 28, 4);
+      ctx.fillStyle='#fde047'; ctx.fillRect(cx-2, cy-20, 4, 6);
     }
 
-    function drawSolid(r, moving=false){
-      const g = ctx.createLinearGradient(r.x, r.y, r.x, r.y+r.h);
-      g.addColorStop(0, moving? '#60a5fa' : '#1f2937');
-      g.addColorStop(1, moving? '#3b82f6' : '#0b1220');
-      ctx.fillStyle = g; ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.strokeRect(r.x+0.5, r.y+0.5, r.w-1, r.h-1);
-    }
+    // Buttons
+    document.getElementById('resetBtn').addEventListener('click', ()=> reset(levelIndex));
+    document.getElementById('replayBtn').addEventListener('click', ()=> { document.getElementById('winModal').classList.remove('open'); reset(0); });
 
-    function drawSpike(s){
-      ctx.save();
-      const n = Math.max(1, Math.floor(s.w / 15));
-      const wid = s.w / n; ctx.fillStyle = '#ef4444'; ctx.strokeStyle = '#fecaca'; ctx.lineWidth = 1;
-      for (let i=0;i<n;i++){
-        const x = s.x + i*wid; const y = s.y + s.h;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x+wid*0.5, y - s.h);
-        ctx.lineTo(x+wid, y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
+    // Start
+    reset(0);
+    requestAnimationFrame(loop);
 
-    function drawGate(g){
-      ctx.save();
-      ctx.fillStyle = '#10b981';
-      ctx.fillRect(g.x, g.y, g.w, g.h);
-      ctx.fillStyle = '#065f46';
-      ctx.fillRect(g.x+6, g.y+6, g.w-12, g.h-12);
-      ctx.restore();
-    }
-
-    function drawCow(){
-      const x = Math.round(cow.x), y = Math.round(cow.y), w=cow.w, h=cow.h;
-      // Shadow
-      ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(x+w/2, y+h+8, w*0.6, h*0.25, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
-
-      // Body
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(x, y, w, h);
-      // Spots
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(x+6, y+8, 12, 10);
-      ctx.fillRect(x+22, y+16, 8, 6);
-
-      // Head
-      const hx = x + (cow.facing>0 ? w-6 : -16);
-      ctx.fillStyle = '#f8fafc'; ctx.fillRect(hx, y+4, 16, 14);
-      // Ear
-      ctx.fillStyle = '#e5e7eb'; ctx.fillRect(hx + (cow.facing>0? 10:-2), y, 6, 6);
-      // Eye
-      ctx.fillStyle = '#111827'; ctx.fillRect(hx + (cow.facing>0? 9:3), y+8, 3, 3);
-      // Nose (pink)
-      ctx.fillStyle = '#f9a8d4'; ctx.fillRect(hx + (cow.facing>0? 2:8), y+12, 6, 5);
-
-      // Legs
-      ctx.fillStyle = '#e5e7eb';
-      ctx.fillRect(x+6, y+h-6, 6, 6);
-      ctx.fillRect(x+w-12, y+h-6, 6, 6);
-
-      // Tail
-      ctx.fillStyle = '#e5e7eb';
-      ctx.fillRect(x-4, y+8, 4, 3);
-
-      // Lamumu band (collar)
-      ctx.fillStyle = '#facc15';
-      ctx.fillRect(x+6, y+2, w-12, 4);
-      // Lamumu tag (small pendant)
-      ctx.fillStyle = '#fde047';
-      ctx.fillRect(x + w/2 - 3, y+6, 6, 6);
-    }
-
-    // --- Main Loop (fixed timestep for stability) ---
-    bindKeyboard(); bindTouch();
-    resetLevel(0);
-
-    function frame(now){
-      let dt = (now - last) / 1000; last = now;
-      dt = Math.min(dt, 0.033); // clamp to avoid huge steps
-      acc += dt;
-      while (acc >= 1/120) { step(1/120); acc -= 1/120; }
-      drawLevel();
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
-
-    // Replay
-    document.getElementById('replayBtn').addEventListener('click', ()=>{
-      document.getElementById('winModal').classList.remove('open');
-      resetLevel(0);
-    });
+  })();
   </script></body>
 </html>
