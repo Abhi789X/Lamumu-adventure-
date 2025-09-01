@@ -1,511 +1,676 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Lamumu vs Bee — Protect the Cow</title>
-<style>
-  :root{
-    --bg1:#06202a; --bg2:#072f3f; --card:#0b2736; --fg:#eef6ff;
-    --muted:#9fb0c4; --accent:#7dd3fc; --lam:#facc15; --danger:#ef4444;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-  body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg2),var(--bg1));color:var(--fg);padding:12px}
-  .wrap{width:min(980px,96vw);max-width:980px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6)}
-  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .title{font-weight:800;font-size:18px}
-  .hud{display:flex;gap:10px;align-items:center}
-  .badge{background:rgba(255,255,255,0.04);padding:6px 10px;border-radius:10px;font-weight:700}
-  canvas{background:linear-gradient(180deg,#0b2a3b,#06202b);border-radius:10px;border:1px solid rgba(255,255,255,0.03);display:block;touch-action:none}
-  .controls{margin-top:10px;display:flex;gap:8px;align-items:center}
-  .btn{background:linear-gradient(90deg,#3b82f6,#06b6d4);border:none;padding:10px 14px;border-radius:10px;color:white;font-weight:800;cursor:pointer}
-  .small{color:var(--muted);font-size:13px}
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)}
-  .modal.open{display:flex}
-  .card{background:linear-gradient(180deg,#0f2435,#08121a);border-radius:14px;padding:20px;text-align:center;color:var(--fg);width:min(92%,520px);box-shadow:0 30px 90px rgba(0,0,0,0.6)}
-  .replay{margin-top:14px;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,#34d399,#38bdf8);font-weight:800;color:#04202a;cursor:pointer}
-  .hint{font-size:13px;color:var(--muted);margin-left:6px}
-  @media(max-width:760px){ .wrap{padding:8px} canvas{width:100%;height:auto} }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protect The Cow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #start-screen, #game-over-screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
+        
+        #game-over-screen {
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            display: none;
+        }
+        
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #2E7D32;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+        }
+        
+        p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        
+        button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #388E3C;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        #game-screen {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: none;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #level-info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2E7D32;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            color: #555;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cow {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 60px;
+            background: #8B4513;
+            border-radius: 40% 40% 30% 30%;
+            z-index: 10;
+        }
+        
+        .cow::before, .cow::after {
+            content: '';
+            position: absolute;
+            background: #8B4513;
+            border-radius: 50%;
+        }
+        
+        .cow::before {
+            width: 30px;
+            height: 25px;
+            top: -15px;
+            left: 15px;
+        }
+        
+        .cow::after {
+            width: 20px;
+            height: 15px;
+            top: -10px;
+            right: 15px;
+        }
+        
+        .eye {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            top: -8px;
+        }
+        
+        .eye.left { left: 25px; }
+        .eye.right { right: 25px; }
+        
+        .grass {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            z-index: 5;
+        }
+        
+        .hive {
+            position: absolute;
+            top: 30px;
+            width: 60px;
+            height: 80px;
+            background: #FFA000;
+            border-radius: 50% 50% 40% 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .hive::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 15px;
+            background: #795548;
+            border-radius: 5px;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .bee {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #FFC107;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        
+        .bee::before {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #000;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+        }
+        
+        .bee::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 5px;
+            border: 1px solid #000;
+            border-radius: 50%;
+            top: 2px;
+            left: -3px;
+        }
+        
+        .rock {
+            position: absolute;
+            background: #78909C;
+            border-radius: 40% 40% 30% 30%;
+            z-index: 4;
+        }
+        
+        .win-text {
+            color: #4CAF50;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .lose-text {
+            color: #F44336;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        #mute-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            font-size: 14px;
+            background: #9E9E9E;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap" role="application" aria-label="Lamumu vs Bee">
-    <div class="top">
-      <div><div class="title">Lamumu vs Bee</div><div class="small">Draw a barrier to protect the cow — lines can't be drawn over rocks</div></div>
-      <div class="hud"><div class="badge" id="levelBadge">Level 1 / 5</div><div class="badge" id="timeBadge">Survive: 0s</div><div class="badge" id="bestBadge">Best Lvl: 0</div></div>
+    <div id="game-container">
+        <div id="start-screen">
+            <h1>Protect The Cow 🐄</h1>
+            <p>Draw lines to protect the cow from attacking bees!<br>Make sure your line has no gaps or the bees will get through.</p>
+            <p>Levels will get harder with more bees and obstacles!</p>
+            <button id="start-btn">Start Game</button>
+        </div>
+        
+        <div id="game-screen">
+            <div id="level-info">Level: 1</div>
+            <button id="mute-btn">Sound: ON</button>
+            <div id="canvas-container">
+                <canvas id="game-canvas" width="800" height="600"></canvas>
+            </div>
+            <div id="instructions">Click and drag to draw a protective line</div>
+            
+            <div class="grass"></div>
+            <div class="cow">
+                <div class="eye left"></div>
+                <div class="eye right"></div>
+            </div>
+            <div class="hive"></div>
+        </div>
+        
+        <div id="game-over-screen">
+            <h2 class="win-text">Congratulations!</h2>
+            <h2 class="lose-text">Game Over!</h2>
+            <p id="result-message">You protected the cow!</p>
+            <button id="restart-btn">Play Again</button>
+        </div>
     </div>
 
-    <canvas id="game" width="960" height="600" aria-label="Game canvas"></canvas>
-
-    <div class="controls">
-      <button class="btn" id="startBtn">Start</button>
-      <div class="hint" id="phaseHint">Press Start → draw near cow → release → bees will attack.</div>
-    </div>
-  </div>
-
-  <div class="modal" id="endModal" role="dialog" aria-modal="true">
-    <div class="card">
-      <div id="endEmoji" style="font-size:42px">🎉</div>
-      <div id="endTitle" style="font-weight:800;margin-top:8px">You Win!</div>
-      <div id="endText" style="color:var(--muted);margin-top:6px"></div>
-      <button class="replay" id="replayBtn">Restart</button>
-    </div>
-  </div>
-
-<script>
-(() => {
-  // -------- CONFIG ----------
-  const LEVELS = 5;
-  const SURVIVE_TIMES = [4, 6, 8, 10, 12]; // seconds needed per level
-  const INK_PER_LEVEL = [1200, 1100, 1000, 900, 800]; // available draw length
-  const LINE_THICK = 8;
-  const LINE_LIFE = 9999; // lines will persist during the attack phase; for now keep until level end
-  const SAMPLE_STEP = 6;
-  const COW_R = 28;
-  const BEE_R = 10;
-  const START_BEE_SPEED = 70;
-  const BEE_SPEED_INC = 16;
-  const START_SPAWN = 0.9;
-  const SPAWN_DECAY = 0.85;
-  const MAX_BEES = 40;
-  const ROCK_COLOR = '#5a4d3a';
-
-  // ---------- DOM ----------
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const startBtn = document.getElementById('startBtn');
-  const levelBadge = document.getElementById('levelBadge');
-  const timeBadge = document.getElementById('timeBadge');
-  const endModal = document.getElementById('endModal');
-  const endTitle = document.getElementById('endTitle');
-  const endText = document.getElementById('endText');
-  const endEmoji = document.getElementById('endEmoji');
-  const replayBtn = document.getElementById('replayBtn');
-  const bestBadge = document.getElementById('bestBadge');
-  const phaseHint = document.getElementById('phaseHint');
-
-  const W = canvas.width, H = canvas.height;
-  const cowPos = { x: W/2, y: H - 90 }; // cow stationary on ground
-
-  // ---------- STATE ----------
-  let levelIndex = 0;
-  let inkLeft = INK_PER_LEVEL[0];
-  let lines = []; // list of strokes: each {points: [{x,y}], created, life}
-  let currentStroke = [];
-  let isDrawing = false;
-  let drawingAllowed = false; // only when level started and pre-attack phase
-  let bees = [];
-  let rocks = []; // rects {x,y,w,h}; can't draw inside
-  let spawnInterval = START_SPAWN;
-  let beeSpeed = START_BEE_SPEED;
-  let spawnTimer = 0;
-  let timeElapsed = 0;
-  let surviveTime = SURVIVE_TIMES[0];
-  let running = false;
-  let attackPhase = false; // bees active
-  let bestLevel = parseInt(localStorage.getItem('lamumu_best')||'0',10);
-  bestBadge.textContent = `Best Lvl: ${bestLevel}`;
-
-  // ---------- AUDIO (WebAudio simple) ----------
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  let audioCtx = null;
-  function ensureAudio(){ if(!audioCtx) audioCtx = new AudioCtx(); }
-  function beep(freq=440,dur=0.08,vol=0.06){ try{ if(!audioCtx) ensureAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur); setTimeout(()=>o.stop(), dur*1000+20);}catch(e){} }
-  function buzz(vol=0.05){ try{ if(!audioCtx) ensureAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=180; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.12); setTimeout(()=>o.stop(),160); }, 120); }catch(e){} }
-  function happyTone(){ beep(520,0.12,0.08); setTimeout(()=>beep(640,0.08,0.06),130); }
-  function hurtTone(){ beep(160,0.22,0.14); }
-
-  // ---------- HELPERS ----------
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  const rnd=(a,b)=>a + Math.random()*(b-a);
-  const now = ()=>performance.now()/1000;
-
-  function segDist(a,b,p){
-    const vx=b.x-a.x, vy=b.y-a.y;
-    const wx=p.x-a.x, wy=p.y-a.y;
-    const c1 = vx*wx + vy*wy;
-    if(c1 <= 0) return Math.hypot(p.x-a.x, p.y-a.y);
-    const c2 = vx*vx + vy*vy;
-    if(c2 <= c1) return Math.hypot(p.x-b.x, p.y-b.y);
-    const t = c1 / c2;
-    const proj = { x: a.x + t*vx, y: a.y + t*vy };
-    return Math.hypot(p.x - proj.x, p.y - proj.y);
-  }
-
-  function pointInRect(p, r){ return p.x >= r.x && p.x <= r.x+r.w && p.y >= r.y && p.y <= r.y+r.h; }
-
-  // ---------- LEVEL / ROCKS ----------
-  function makeRocksForLevel(idx){
-    rocks = [];
-    const baseY = H - 70;
-    const rockCount = Math.min(1 + idx, 6);
-    for(let i=0;i<rockCount;i++){
-      const rw = rnd(60,140), rh = rnd(28,48);
-      const rx = rnd(80, W-160);
-      const ry = baseY - rh + rnd(-20,20) - idx*3; // slight uneven with level
-      rocks.push({x: rx, y: ry, w: rw, h: rh});
-    }
-    // Ensure not covering cow position
-    rocks = rocks.filter(r => !(r.x < cowPos.x + 40 && r.x + r.w > cowPos.x - 40 && r.y < cowPos.y + 10));
-  }
-
-  function startLevel(idx=0){
-    levelIndex = clamp(idx,0,LEVELS-1);
-    inkLeft = INK_PER_LEVEL[levelIndex];
-    lines = []; currentStroke = []; isDrawing=false;
-    bees = [];
-    makeRocksForLevel(levelIndex);
-    spawnInterval = Math.max(0.25, START_SPAWN * Math.pow(SPAWN_DECAY, levelIndex));
-    beeSpeed = START_BEE_SPEED + BEE_SPEED_INC * levelIndex;
-    spawnTimer = 0;
-    timeElapsed = 0;
-    surviveTime = SURVIVE_TIMES[levelIndex];
-    running = true; attackPhase = false;
-    levelBadge.textContent = `Level ${levelIndex+1} / ${LEVELS}`;
-    timeBadge.textContent = `Survive: ${surviveTime}s`;
-    phaseHint.textContent = 'Draw lines near the cow. After you finish drawing, bees will attack.';
-    endModal.classList.remove('open');
-    // unlock audio
-    canvas.focus();
-  }
-
-  // ---------- DRAWING INPUT ----------
-  function toCanvasPos(e){
-    const rect = canvas.getBoundingClientRect();
-    const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    const x = (p.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (p.clientY - rect.top) * (canvas.height / rect.height);
-    return {x,y};
-  }
-
-  // Determine if a point is over rock (disallow drawing there)
-  function pointOverRock(p){
-    for(const r of rocks) if(pointInRect(p,r)) return true;
-    return false;
-  }
-
-  canvas.addEventListener('pointerdown', (ev)=>{
-    if(!running) return;
-    if(attackPhase) return; // cannot draw during attack
-    const p = toCanvasPos(ev);
-    // require start near cow (generous)
-    const d = Math.hypot(p.x - cowPos.x, p.y - cowPos.y);
-    if(d > 180){ hintFlash('Start your stroke near the cow'); return; }
-    if(pointOverRock(p)){ hintFlash('Cannot draw on rock!'); return; }
-    isDrawing = true; currentStroke = [{x:p.x,y:p.y}];
-    ev.preventDefault();
-  }, {passive:false});
-
-  canvas.addEventListener('pointermove', (ev)=>{
-    if(!isDrawing) return;
-    const p = toCanvasPos(ev); const prev = currentStroke[currentStroke.length-1];
-    const dx = p.x - prev.x, dy = p.y - prev.y; const d = Math.hypot(dx,dy);
-    if(d < 3) return;
-    // sample
-    const steps = Math.floor(d / SAMPLE_STEP) || 1;
-    for(let i=1;i<=steps;i++){
-      const t = i/steps;
-      const nx = prev.x + dx*t, ny = prev.y + dy*t;
-      // stop sampling if inside rock; create hole
-      if(pointOverRock({x:nx,y:ny})){ 
-        // finalize currentStroke up to here then finish drawing
-        currentStroke.push({x:nx,y:ny}); finalizeStroke();
-        return;
-      }
-      currentStroke.push({x:nx,y:ny});
-      inkLeft -= Math.hypot(dx/steps, dy/steps);
-      if(inkLeft <= 0){ inkLeft = 0; finalizeStroke(); return; }
-    }
-  }, {passive:true});
-
-  window.addEventListener('pointerup', ()=>{ if(isDrawing) finalizeStroke(); });
-
-  function finalizeStroke(){
-    if(currentStroke.length >= 2){
-      if(lines.length >= 6) lines.shift(); // limit count
-      lines.push({points: currentStroke.slice(), created: now(), life: LINE_LIFE});
-      // after user finishes a stroke, trigger attack after short delay
-      triggerAttackSoon();
-    }
-    currentStroke = []; isDrawing = false;
-  }
-
-  let attackTimeout = null;
-  function triggerAttackSoon(){
-    if(attackPhase) return;
-    if(attackTimeout) clearTimeout(attackTimeout);
-    attackTimeout = setTimeout(()=>{ startAttackPhase(); }, 700); // bees start 0.7s after drawing ends
-  }
-
-  // ---------- BEES ----------
-  function spawnBee(){
-    if(bees.length >= MAX_BEES) return;
-    const side = Math.floor(Math.random()*4);
-    let x,y;
-    if(side===0){ x = rnd(20, W-20); y = -30; } // top
-    else if(side===1){ x = W+30; y = rnd(20, H/2); } // right
-    else if(side===2){ x = rnd(20, W-20); y = H+40; } // bottom
-    else { x = -30; y = rnd(20, H/2); } // left
-    const angle = Math.atan2((cowPos.y - y), (cowPos.x - x)) + rnd(-0.6,0.6);
-    const sp = beeSpeed * rnd(0.85, 1.15);
-    bees.push({x,y,vx: Math.cos(angle)*sp, vy: Math.sin(angle)*sp, r: BEE_R});
-    buzz(0.03);
-  }
-
-  // Bee collision with lines: if close to any segment, reflect a bit
-  function handleBeeLineCollision(b){
-    for(const L of lines){
-      const pts = L.points;
-      for(let i=0;i<pts.length-1;i++){
-        const a = pts[i], bb = pts[i+1];
-        const d = segDist(a,bb,b);
-        if(d < b.r + 4){
-          // compute normal (perp to segment)
-          const sx = bb.x - a.x, sy = bb.y - a.y; const len = Math.hypot(sx,sy) || 1;
-          const nx = -sy/len, ny = sx/len;
-          // push out
-          b.x += nx*(b.r + 4 - d);
-          b.y += ny*(b.r + 4 - d);
-          // reflect velocity
-          const dot = b.vx*nx + b.vy*ny;
-          b.vx = b.vx - 2*dot*nx; b.vy = b.vy - 2*dot*ny;
-          // small damping
-          b.vx *= 0.86; b.vy *= 0.86;
-          // pop sound
-          beep(420,0.06,0.03);
-          return;
-        }
-      }
-    }
-  }
-
-  // check if bee finds a hole in lines near cow path: bee can go through any area not covered by barrier
-  function beeFindsHole(b){
-    // check if any line segment lies between bee and cow near crossing point
-    // simple approach: cast a ray from bee->cow and see if any segment intersects that ray; if none then it's a "hole"
-    const A = {x: b.x, y: b.y}, B = {x: cowPos.x, y: cowPos.y};
-    for(const L of lines){
-      const pts = L.points;
-      for(let i=0;i<pts.length-1;i++){
-        if(segmentsIntersect(A,B, pts[i], pts[i+1])) return false; // segment blocks ray
-      }
-    }
-    return true; // no segment intersects => hole exists
-  }
-
-  // basic segment intersection test
-  function ccw(p1,p2,p3){ return (p3.y-p1.y)*(p2.x-p1.x) > (p2.y-p1.y)*(p3.x-p1.x); }
-  function segmentsIntersect(a,b,c,d){
-    return (ccw(a,c,d) !== ccw(b,c,d)) && (ccw(a,b,c) !== ccw(a,b,d));
-  }
-
-  // ---------- GAME LOOP ----------
-  let last = performance.now()/1000;
-  function loop(){
-    const nowT = performance.now()/1000;
-    const dt = Math.min(0.033, nowT - last); last = nowT;
-    if(running && attackPhase){
-      // spawn bees periodically
-      spawnTimer += dt;
-      if(spawnTimer >= spawnInterval){
-        spawnBee(); spawnTimer = 0;
-      }
-      // update bees
-      for(let i=bees.length-1;i>=0;i--){
-        const b = bees[i];
-        // steer toward cow but if there's a blocking line, try to move to find hole (small randomness)
-        const dirx = cowPos.x - b.x + rnd(-20,20);
-        const diry = cowPos.y - b.y + rnd(-20,20);
-        const len = Math.hypot(dirx,diry)||1;
-        const desiredSpeed = beeSpeed * rnd(0.9,1.15);
-        b.vx += ((dirx/len)*desiredSpeed - b.vx) * 0.06;
-        b.vy += ((diry/len)*desiredSpeed - b.vy) * 0.06;
-        b.x += b.vx * dt; b.y += b.vy * dt;
-        handleBeeLineCollision(b);
-
-        // if bee close enough to cow and there is a hole along ray -> sting
-        const dCow = Math.hypot(b.x - cowPos.x, b.y - cowPos.y);
-        if(dCow < COW_R + b.r + 2){
-          // when close, check if there is a blocking line between bee and cow
-          if(beeFindsHole(b)){
-            // sting -> game over
-            running = false;
-            attackPhase = false;
-            hurtTone();
-            endEmoji.textContent = '💥';
-            endTitle.textContent = 'Game Over — Cow got stung!';
-            endText.textContent = `You reached Level ${levelIndex+1}.`;
-            endModal.classList.add('open');
-            localStorage.setItem('lamumu_best', String(Math.max(levelIndex, bestLevel)));
-            bestBadge.textContent = `Best Lvl: ${Math.max(levelIndex, bestLevel)}`;
-            return;
-          } else {
-            // blocked by line, reflect or bounce: handled in collision
-          }
-        }
-
-        // remove bees far outside
-        if(b.x < -120 || b.x > W+120 || b.y < -120 || b.y > H+120) bees.splice(i,1);
-      }
-
-      // time
-      timeElapsed += dt;
-      const rem = Math.max(0, surviveTime - timeElapsed);
-      timeBadge.textContent = `Survive: ${rem.toFixed(1)}s`;
-      if(timeElapsed >= surviveTime){
-        // level cleared
-        running = false;
-        attackPhase = false;
-        happyTone();
-        endEmoji.textContent = '🎉';
-        if(levelIndex < LEVELS - 1){
-          endTitle.textContent = 'Level Cleared!';
-          endText.textContent = `Ready for level ${levelIndex+2}`;
-          endModal.classList.add('open');
-          // update best
-          bestLevel = Math.max(bestLevel, levelIndex+1);
-          localStorage.setItem('lamumu_best', String(bestLevel));
-          bestBadge.textContent = `Best Lvl: ${bestLevel}`;
-          setTimeout(()=>{ startLevel(levelIndex+1); }, 800);
-        } else {
-          endTitle.textContent = 'Congrats — You cleared all levels!';
-          endText.textContent = `Final Victory — Lamumu is safe!`;
-          endModal.classList.add('open');
-          bestLevel = Math.max(bestLevel, levelIndex+1);
-          localStorage.setItem('lamumu_best', String(bestLevel));
-        }
-      }
-    }
-
-    draw();
-    requestAnimationFrame(loop);
-  }
-
-  // ---------- DRAW ----------
-  function drawCow(){
-    const cx = cowPos.x, cy = cowPos.y;
-    // shadow
-    ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(cx, cy+26, 40, 12, 0,0,Math.PI*2); ctx.fill(); ctx.restore();
-    // body
-    ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx-36, cy-44, 72, 44);
-    // spots
-    ctx.fillStyle = '#111827'; ctx.fillRect(cx-18, cy-36, 14, 8); ctx.fillRect(cx+8, cy-28, 12, 6);
-    // head
-    ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx+36, cy-40, 22, 18);
-    ctx.fillStyle = '#111827'; ctx.fillRect(cx+44, cy-34, 4,4);
-    ctx.fillStyle = '#f9a8d4'; ctx.fillRect(cx+38, cy-24, 10,6);
-    // legs
-    ctx.fillStyle = '#e5e7eb'; ctx.fillRect(cx-28, cy+2, 10, 12); ctx.fillRect(cx+16, cy+2, 10, 12);
-    // lamumu band
-    ctx.fillStyle = 'var(--lam)'; ctx.fillRect(cx-36, cy-52, 72, 8);
-    ctx.fillStyle = '#fde047'; ctx.fillRect(cx-2, cy-48, 8, 10);
-  }
-
-  function draw(){
-    // background
-    const g = ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#072f3f'); g.addColorStop(1,'#061a22');
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-    // ground grass strip
-    ctx.fillStyle = '#0c3b20'; ctx.fillRect(0, H-80, W, 80);
-    // draw rocks
-    for(const r of rocks){
-      ctx.fillStyle = ROCK_COLOR;
-      ctx.fillRect(r.x, r.y, r.w, r.h);
-      ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.strokeRect(r.x+0.5, r.y+0.5, r.w-1, r.h-1);
-    }
-
-    // hive (top-left or top-right based on level variety)
-    const hiveX = (levelIndex % 2 === 0) ? 80 : W-140;
-    const hiveY = 80;
-    // hive body
-    ctx.save(); ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.ellipse(hiveX+30, hiveY, 36, 30, 0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#78350f'; ctx.fillRect(hiveX+18, hiveY+4, 24, 10); ctx.restore();
-    // hive label
-    ctx.fillStyle = '#fde047'; ctx.font = '12px system-ui'; ctx.fillText('Hive', hiveX+8, hiveY-32);
-
-    // draw lines
-    ctx.lineWidth = LINE_THICK; ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.strokeStyle = 'rgba(248,250,252,0.98)';
-    for(const L of lines){
-      ctx.beginPath();
-      const pts = L.points;
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-    }
-    // draw current stroke
-    if(currentStroke.length > 0){
-      ctx.beginPath(); ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
-      for(let i=1;i<currentStroke.length;i++) ctx.lineTo(currentStroke[i].x, currentStroke[i].y);
-      ctx.stroke();
-    }
-
-    // draw bees
-    for(const b of bees) drawBee(b);
-
-    // draw cow
-    drawCow();
-
-    // UI small overlay
-    ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(12,12,240,36);
-  }
-
-  function drawBee(b){
-    ctx.save(); ctx.translate(b.x, b.y);
-    ctx.beginPath(); ctx.fillStyle = '#fde047'; ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#111827'; ctx.fillRect(-b.r*0.35, -b.r*0.6, b.r*0.7, b.r*0.45);
-    ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(-b.r*0.6, -b.r*0.95, b.r*0.45, b.r*0.2,0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(b.r*0.1, -b.r*0.95, b.r*0.45, b.r*0.2,0,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-
-  // hint flash
-  let hintTimer = null;
-  function hintFlash(txt){
-    const prev = phaseHint.textContent;
-    phaseHint.textContent = txt;
-    clearTimeout(hintTimer);
-    hintTimer = setTimeout(()=>{ phaseHint.textContent = prev; }, 1000);
-  }
-
-  // ---------- CONTROLS ----------
-  startBtn.addEventListener('click', ()=>{
-    startBtn.disabled = true; // avoid double
-    ensureAudio();
-    startLevel(0);
-    // small start beep
-    beep(480,0.08,0.06);
-    setTimeout(()=>{ startBtn.disabled = false; }, 400);
-  });
-
-  replayBtn.addEventListener('click', ()=>{
-    endModal.classList.remove('open');
-    startLevel(0);
-  });
-
-  // start attack phase: bees spawn and attack
-  function startAttackPhase(){
-    if(attackPhase || !running) return;
-    attackPhase = true;
-    spawnTimer = 0;
-    // spawn a few immediate bees for pressure
-    for(let i=0;i<Math.min(2 + levelIndex, 6); i++) spawnBee();
-  }
-
-  // ---------- INIT ----------
-  function init(){
-    // friendly initial screen: waiting for start
-    draw();
-    requestAnimationFrame(loop);
-  }
-
-  // unlock audio on first interaction
-  document.addEventListener('pointerdown', function unlock(){ try{ if(!audioCtx) ensureAudio(); if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} document.removeEventListener('pointerdown', unlock); });
-
-  init();
-})();
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Game elements
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const startBtn = document.getElementById('start-btn');
+            const restartBtn = document.getElementById('restart-btn');
+            const muteBtn = document.getElementById('mute-btn');
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            const levelInfo = document.getElementById('level-info');
+            const resultMessage = document.getElementById('result-message');
+            const winText = document.querySelector('.win-text');
+            const loseText = document.querySelector('.lose-text');
+            
+            // Game variables
+            let currentLevel = 1;
+            let score = 0;
+            let gameActive = false;
+            let isDrawing = false;
+            let lastX, lastY;
+            let drawnLines = [];
+            let bees = [];
+            let rocks = [];
+            let soundEnabled = true;
+            
+            // Level configurations
+            const levels = [
+                { bees: 3, rocks: 0, beeSpeed: 2 },
+                { bees: 5, rocks: 1, beeSpeed: 2.5 },
+                { bees: 7, rocks: 2, beeSpeed: 3 },
+                { bees: 10, rocks: 3, beeSpeed: 3.5 },
+                { bees: 15, rocks: 5, beeSpeed: 4 }
+            ];
+            
+            // Sound effects
+            const buzzSound = new Audio();
+            buzzSound.src = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+            buzzSound.loop = true;
+            
+            const mooSound = new Audio();
+            mooSound.src = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+            
+            const winSound = new Audio();
+            winSound.src = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+            
+            const loseSound = new Audio();
+            loseSound.src = "data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+            
+            // Event listeners
+            startBtn.addEventListener('click', startGame);
+            restartBtn.addEventListener('click', restartGame);
+            muteBtn.addEventListener('click', toggleSound);
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                const mouseEvent = new MouseEvent('mouseup');
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            // Game functions
+            function startGame() {
+                startScreen.style.display = 'none';
+                gameScreen.style.display = 'block';
+                gameActive = true;
+                currentLevel = 1;
+                score = 0;
+                initLevel();
+                gameLoop();
+                if (soundEnabled) {
+                    buzzSound.play();
+                }
+            }
+            
+            function restartGame() {
+                gameOverScreen.style.display = 'none';
+                gameScreen.style.display = 'block';
+                gameActive = true;
+                currentLevel = 1;
+                score = 0;
+                drawnLines = [];
+                bees = [];
+                rocks = [];
+                initLevel();
+                gameLoop();
+                if (soundEnabled) {
+                    buzzSound.play();
+                }
+            }
+            
+            function toggleSound() {
+                soundEnabled = !soundEnabled;
+                muteBtn.textContent = soundEnabled ? 'Sound: ON' : 'Sound: OFF';
+                
+                if (!soundEnabled) {
+                    buzzSound.pause();
+                    mooSound.pause();
+                } else if (gameActive) {
+                    buzzSound.play();
+                }
+            }
+            
+            function initLevel() {
+                // Clear previous level
+                bees = [];
+                rocks = [];
+                drawnLines = [];
+                
+                // Set level info
+                levelInfo.textContent = `Level: ${currentLevel}`;
+                
+                const levelConfig = levels[currentLevel - 1];
+                
+                // Create bees
+                for (let i = 0; i < levelConfig.bees; i++) {
+                    bees.push({
+                        x: 400 + Math.random() * 100 - 50,
+                        y: 50 + Math.random() * 50,
+                        speed: levelConfig.beeSpeed + Math.random() * 1.5,
+                        targetX: 400,
+                        targetY: 500,
+                        hit: false
+                    });
+                }
+                
+                // Create rocks
+                for (let i = 0; i < levelConfig.rocks; i++) {
+                    rocks.push({
+                        x: Math.random() * 700 + 50,
+                        y: 200 + Math.random() * 300,
+                        width: 30 + Math.random() * 40,
+                        height: 20 + Math.random() * 30
+                    });
+                }
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            function startDrawing(e) {
+                if (!gameActive) return;
+                
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                lastX = e.clientX - rect.left;
+                lastY = e.clientY - rect.top;
+                
+                // Start a new line
+                drawnLines.push([]);
+            }
+            
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const currentX = e.clientX - rect.left;
+                const currentY = e.clientY - rect.top;
+                
+                // Draw on canvas
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(currentX, currentY);
+                ctx.strokeStyle = '#2196F3';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.closePath();
+                
+                // Store the line segment
+                drawnLines[drawnLines.length - 1].push({
+                    x1: lastX,
+                    y1: lastY,
+                    x2: currentX,
+                    y2: currentY
+                });
+                
+                lastX = currentX;
+                lastY = currentY;
+            }
+            
+            function stopDrawing() {
+                isDrawing = false;
+            }
+            
+            function gameLoop() {
+                if (!gameActive) return;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw rocks
+                ctx.fillStyle = '#78909C';
+                for (const rock of rocks) {
+                    ctx.beginPath();
+                    ctx.ellipse(rock.x, rock.y, rock.width/2, rock.height/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Draw all lines
+                ctx.beginPath();
+                ctx.strokeStyle = '#2196F3';
+                ctx.lineWidth = 3;
+                
+                for (const line of drawnLines) {
+                    for (const segment of line) {
+                        ctx.moveTo(segment.x1, segment.y1);
+                        ctx.lineTo(segment.x2, segment.y2);
+                    }
+                }
+                ctx.stroke();
+                
+                // Update and draw bees
+                let allBeesHit = true;
+                
+                for (const bee of bees) {
+                    if (bee.hit) continue;
+                    
+                    allBeesHit = false;
+                    
+                    // Move bee towards cow
+                    const dx = bee.targetX - bee.x;
+                    const dy = bee.targetY - bee.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    bee.x += (dx / dist) * bee.speed;
+                    bee.y += (dy / dist) * bee.speed;
+                    
+                    // Check if bee hit a line
+                    let hitLine = false;
+                    for (const line of drawnLines) {
+                        for (const segment of line) {
+                            if (lineIntersect(bee.x, bee.y, bee.x, bee.y, segment.x1, segment.y1, segment.x2, segment.y2)) {
+                                hitLine = true;
+                                break;
+                            }
+                        }
+                        if (hitLine) break;
+                    }
+                    
+                    // If bee hit a line, mark it as hit and make it fall
+                    if (hitLine) {
+                        bee.hit = true;
+                        bee.speed = 1; // Fall slowly
+                        if (soundEnabled) {
+                            mooSound.currentTime = 0;
+                            mooSound.play();
+                        }
+                    }
+                    
+                    // Draw bee
+                    ctx.beginPath();
+                    ctx.arc(bee.x, bee.y, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = bee.hit ? '#999' : '#FFC107';
+                    ctx.fill();
+                    
+                    // Draw bee stripes
+                    if (!bee.hit) {
+                        ctx.beginPath();
+                        ctx.moveTo(bee.x - 6, bee.y);
+                        ctx.lineTo(bee.x + 6, bee.y);
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(bee.x - 5, bee.y - 4);
+                        ctx.lineTo(bee.x + 5, bee.y - 4);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(bee.x - 5, bee.y + 4);
+                        ctx.lineTo(bee.x + 5, bee.y + 4);
+                        ctx.stroke();
+                    }
+                    
+                    // Draw bee wings
+                    ctx.beginPath();
+                    ctx.arc(bee.x - 4, bee.y - 6, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(bee.x + 4, bee.y - 6, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Check if bee reached the cow
+                    if (bee.y > 530 && !bee.hit) {
+                        gameOver(false);
+                        return;
+                    }
+                }
+                
+                // If all bees are hit, go to next level or win game
+                if (allBeesHit) {
+                    score += currentLevel * 100;
+                    
+                    if (currentLevel >= levels.length) {
+                        gameOver(true);
+                        return;
+                    } else {
+                        currentLevel++;
+                        initLevel();
+                    }
+                }
+                
+                requestAnimationFrame(gameLoop);
+            }
+            
+            function gameOver(isWin) {
+                gameActive = false;
+                buzzSound.pause();
+                
+                if (isWin) {
+                    winText.style.display = 'block';
+                    loseText.style.display = 'none';
+                    resultMessage.textContent = `You protected the cow! Final Score: ${score}`;
+                    if (soundEnabled) winSound.play();
+                } else {
+                    winText.style.display = 'none';
+                    loseText.style.display = 'block';
+                    resultMessage.textContent = `The bees got the cow! Score: ${score}`;
+                    if (soundEnabled) loseSound.play();
+                }
+                
+                gameScreen.style.display = 'none';
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            // Helper function to check line intersection
+            function lineIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+                const den = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+                if (den === 0) return false;
+                
+                const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / den;
+                const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / den;
+                
+                return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
+            }
+        });
+    </script>
 </body>
 </html>
