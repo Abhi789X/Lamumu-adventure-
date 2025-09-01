@@ -2,588 +2,509 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>Protect the Cow — Lamumu Defender</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lamumu vs Bee — Protect the Cow</title>
 <style>
   :root{
-    --bg-1:#071421; --bg-2:#072f3f; --card:#0b2736; --fg:#eef6ff;
+    --bg1:#06202a; --bg2:#072f3f; --card:#0b2736; --fg:#eef6ff;
     --muted:#9fb0c4; --accent:#7dd3fc; --lam:#facc15; --danger:#ef4444;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-  body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg-2),var(--bg-1));color:var(--fg);padding:12px}
-  .wrap{width:min(1000px,96vw);max-width:1000px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6)}
-  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
+  body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg2),var(--bg1));color:var(--fg);padding:12px}
+  .wrap{width:min(980px,96vw);max-width:980px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
   .title{font-weight:800;font-size:18px}
   .hud{display:flex;gap:10px;align-items:center}
   .badge{background:rgba(255,255,255,0.04);padding:6px 10px;border-radius:10px;font-weight:700}
-  .board{display:flex;gap:12px;align-items:flex-start}
-  canvas{background:linear-gradient(180deg,#0b2a3b,#06202b);border-radius:10px;border:1px solid rgba(255,255,255,0.03);touch-action:none}
-  .controls{width:240px;display:flex;flex-direction:column;gap:10px}
-  .btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);padding:10px;border-radius:10px;color:var(--fg);font-weight:700;cursor:pointer}
-  .barWrap{background:rgba(255,255,255,0.02);padding:8px;border-radius:10px}
-  .bar{height:12px;background:rgba(255,255,255,0.04);border-radius:8px;overflow:hidden}
-  .barFill{height:12px;background:linear-gradient(90deg,var(--accent),#60a5fa);width:0%}
-  .hint{font-size:13px;color:var(--muted)}
+  canvas{background:linear-gradient(180deg,#0b2a3b,#06202b);border-radius:10px;border:1px solid rgba(255,255,255,0.03);display:block;touch-action:none}
+  .controls{margin-top:10px;display:flex;gap:8px;align-items:center}
+  .btn{background:linear-gradient(90deg,#3b82f6,#06b6d4);border:none;padding:10px 14px;border-radius:10px;color:white;font-weight:800;cursor:pointer}
+  .small{color:var(--muted);font-size:13px}
   .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)}
   .modal.open{display:flex}
   .card{background:linear-gradient(180deg,#0f2435,#08121a);border-radius:14px;padding:20px;text-align:center;color:var(--fg);width:min(92%,520px);box-shadow:0 30px 90px rgba(0,0,0,0.6)}
   .replay{margin-top:14px;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,#34d399,#38bdf8);font-weight:800;color:#04202a;cursor:pointer}
-  .small{font-size:13px;color:var(--muted)}
-  @media(max-width:860px){ .board{flex-direction:column-reverse} .controls{width:100%} }
+  .hint{font-size:13px;color:var(--muted);margin-left:6px}
+  @media(max-width:760px){ .wrap{padding:8px} canvas{width:100%;height:auto} }
 </style>
 </head>
 <body>
-  <div class="wrap" role="application" aria-label="Protect the Cow game">
+  <div class="wrap" role="application" aria-label="Lamumu vs Bee">
     <div class="top">
-      <div>
-        <div class="title">Protect the Cow — Lamumu Defender</div>
-        <div class="small">Draw lines to shield the cow. Survive each level's target time.</div>
-      </div>
-      <div class="hud">
-        <div class="badge" id="levelBadge">Level 1 / 5</div>
-        <div class="badge" id="timeBadge">Time: 0.0s</div>
-        <div class="badge" id="bestBadge">Best: 0</div>
-      </div>
+      <div><div class="title">Lamumu vs Bee</div><div class="small">Draw a barrier to protect the cow — lines can't be drawn over rocks</div></div>
+      <div class="hud"><div class="badge" id="levelBadge">Level 1 / 5</div><div class="badge" id="timeBadge">Survive: 0s</div><div class="badge" id="bestBadge">Best Lvl: 0</div></div>
     </div>
 
-    <div class="board">
-      <canvas id="game" width="960" height="600" aria-label="Protect the Cow canvas"></canvas>
+    <canvas id="game" width="960" height="600" aria-label="Game canvas"></canvas>
 
-      <div class="controls" aria-hidden="false">
-        <div class="barWrap">
-          <div class="small">Ink</div>
-          <div class="bar" style="margin-top:6px"><div class="barFill" id="inkFill"></div></div>
-          <div class="small" id="inkText">0 / 0</div>
-        </div>
-
-        <button class="btn" id="clearBtn">Clear Lines</button>
-        <button class="btn" id="muteBtn">Mute</button>
-        <button class="btn" id="resetBtn">Reset Level</button>
-
-        <div style="height:6px"></div>
-        <div class="hint" id="hint">Tip: Start your stroke near the cow. Lines last a few seconds.</div>
-        <div style="flex:1"></div>
-        <div class="small">Controls: Draw with mouse or touch. Only a few active lines allowed.</div>
-      </div>
+    <div class="controls">
+      <button class="btn" id="startBtn">Start</button>
+      <div class="hint" id="phaseHint">Press Start → draw near cow → release → bees will attack.</div>
     </div>
   </div>
 
   <div class="modal" id="endModal" role="dialog" aria-modal="true">
     <div class="card">
-      <div id="endEmoji" style="font-size:40px">🎉</div>
+      <div id="endEmoji" style="font-size:42px">🎉</div>
       <div id="endTitle" style="font-weight:800;margin-top:8px">You Win!</div>
       <div id="endText" style="color:var(--muted);margin-top:6px"></div>
-      <button class="replay" id="replayBtn">Replay</button>
+      <button class="replay" id="replayBtn">Restart</button>
     </div>
   </div>
 
 <script>
 (() => {
-  // ===== CONFIG (tweakable) =====
+  // -------- CONFIG ----------
   const LEVELS = 5;
-  const LEVEL_TIMES = [4, 6, 8, 10, 12]; // seconds to survive
-  const INK_PER_LEVEL = [1400, 1200, 1000, 900, 800]; // pixel length
-  const LINE_LIFE = 3.4; // seconds
-  const MAX_ACTIVE_LINES = 4;
-  const SAMPLE_DIST = 6; // px between sample points on line
-  const COW_RADIUS = 26;
-  const BEE_RADIUS = 9;
-  const START_BEE_SPEED = 70; // px/sec
-  const BEE_SPEED_INC = 20; // per level
-  const START_SPAWN_INTERVAL = 0.9; // secs
-  const SPAWN_DECAY = 0.85; // spawn interval multiplier per level
-  const MAX_BEES = 32;
-  const SFX_ENABLED_DEFAULT = true;
+  const SURVIVE_TIMES = [4, 6, 8, 10, 12]; // seconds needed per level
+  const INK_PER_LEVEL = [1200, 1100, 1000, 900, 800]; // available draw length
+  const LINE_THICK = 8;
+  const LINE_LIFE = 9999; // lines will persist during the attack phase; for now keep until level end
+  const SAMPLE_STEP = 6;
+  const COW_R = 28;
+  const BEE_R = 10;
+  const START_BEE_SPEED = 70;
+  const BEE_SPEED_INC = 16;
+  const START_SPAWN = 0.9;
+  const SPAWN_DECAY = 0.85;
+  const MAX_BEES = 40;
+  const ROCK_COLOR = '#5a4d3a';
 
-  // ===== Setup canvas & UI =====
+  // ---------- DOM ----------
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-
-  const inkFill = document.getElementById('inkFill');
-  const inkText = document.getElementById('inkText');
+  const startBtn = document.getElementById('startBtn');
   const levelBadge = document.getElementById('levelBadge');
   const timeBadge = document.getElementById('timeBadge');
-  const bestBadge = document.getElementById('bestBadge');
-  const hint = document.getElementById('hint');
   const endModal = document.getElementById('endModal');
   const endTitle = document.getElementById('endTitle');
   const endText = document.getElementById('endText');
   const endEmoji = document.getElementById('endEmoji');
+  const replayBtn = document.getElementById('replayBtn');
+  const bestBadge = document.getElementById('bestBadge');
+  const phaseHint = document.getElementById('phaseHint');
 
-  // ===== GAME STATE =====
+  const W = canvas.width, H = canvas.height;
+  const cowPos = { x: W/2, y: H - 90 }; // cow stationary on ground
+
+  // ---------- STATE ----------
   let levelIndex = 0;
-  let inkLeft = 0;
-  let totalInk = 0;
-  let lines = []; // each: {points:[{x,y}], created:time, life}
+  let inkLeft = INK_PER_LEVEL[0];
+  let lines = []; // list of strokes: each {points: [{x,y}], created, life}
   let currentStroke = [];
   let isDrawing = false;
-  let strokesLenBuf = 0;
-  let bees = []; // each bee: {x,y,vx,vy,r,alive}
-  let lastSpawn = 0;
-  let spawnInterval = START_SPAWN_INTERVAL;
+  let drawingAllowed = false; // only when level started and pre-attack phase
+  let bees = [];
+  let rocks = []; // rects {x,y,w,h}; can't draw inside
+  let spawnInterval = START_SPAWN;
   let beeSpeed = START_BEE_SPEED;
-  let timeTarget = LEVEL_TIMES[0];
+  let spawnTimer = 0;
   let timeElapsed = 0;
+  let surviveTime = SURVIVE_TIMES[0];
   let running = false;
-  let muted = !SFX_ENABLED_DEFAULT;
+  let attackPhase = false; // bees active
   let bestLevel = parseInt(localStorage.getItem('lamumu_best')||'0',10);
-  bestBadge.textContent = `Best: ${bestLevel}`;
+  bestBadge.textContent = `Best Lvl: ${bestLevel}`;
 
-  // WebAudio for simple SFX
+  // ---------- AUDIO (WebAudio simple) ----------
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   let audioCtx = null;
   function ensureAudio(){ if(!audioCtx) audioCtx = new AudioCtx(); }
-  function playBuzz(vol=0.08, freq=120, dur=0.12){
-    if(muted) return;
-    ensureAudio();
-    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-    o.type='sine'; o.frequency.value = freq;
-    g.gain.value = vol;
-    o.connect(g); g.connect(audioCtx.destination);
-    o.start(); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-    setTimeout(()=>{ try{o.stop()}catch(e){} }, dur*1000);
-  }
-  function playPop(){ playBuzz(0.06,440,0.08); }
-  function playHappy(){ if(muted) return; ensureAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=240; g.gain.value=0.08; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ o.frequency.value=320; }, 120); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.14); }, 300); setTimeout(()=>o.stop(),600); }
-  function playHurt(){ playBuzz(0.12,80,0.22); }
+  function beep(freq=440,dur=0.08,vol=0.06){ try{ if(!audioCtx) ensureAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=freq; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur); setTimeout(()=>o.stop(), dur*1000+20);}catch(e){} }
+  function buzz(vol=0.05){ try{ if(!audioCtx) ensureAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='square'; o.frequency.value=180; g.gain.value=vol; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.12); setTimeout(()=>o.stop(),160); }, 120); }catch(e){} }
+  function happyTone(){ beep(520,0.12,0.08); setTimeout(()=>beep(640,0.08,0.06),130); }
+  function hurtTone(){ beep(160,0.22,0.14); }
 
-  // ===== UTILITIES =====
-  const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
-  const rnd = (a,b)=>a + Math.random()*(b-a);
+  // ---------- HELPERS ----------
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const rnd=(a,b)=>a + Math.random()*(b-a);
   const now = ()=>performance.now()/1000;
 
-  // distance point->segment
   function segDist(a,b,p){
-    const vx = b.x - a.x, vy = b.y - a.y;
-    const wx = p.x - a.x, wy = p.y - a.y;
+    const vx=b.x-a.x, vy=b.y-a.y;
+    const wx=p.x-a.x, wy=p.y-a.y;
     const c1 = vx*wx + vy*wy;
-    if(c1 <= 0) return Math.hypot(p.x - a.x, p.y - a.y);
+    if(c1 <= 0) return Math.hypot(p.x-a.x, p.y-a.y);
     const c2 = vx*vx + vy*vy;
-    if(c2 <= c1) return Math.hypot(p.x - b.x, p.y - b.y);
+    if(c2 <= c1) return Math.hypot(p.x-b.x, p.y-b.y);
     const t = c1 / c2;
-    const projx = a.x + t*vx, projy = a.y + t*vy;
-    return Math.hypot(p.x - projx, p.y - projy);
+    const proj = { x: a.x + t*vx, y: a.y + t*vy };
+    return Math.hypot(p.x - proj.x, p.y - proj.y);
   }
 
-  // reflect velocity vector v across normal n (unit vector)
-  function reflect(vx, vy, nx, ny){
-    const dot = vx*nx + vy*ny;
-    return {vx: vx - 2*dot*nx, vy: vy - 2*dot*ny};
+  function pointInRect(p, r){ return p.x >= r.x && p.x <= r.x+r.w && p.y >= r.y && p.y <= r.y+r.h; }
+
+  // ---------- LEVEL / ROCKS ----------
+  function makeRocksForLevel(idx){
+    rocks = [];
+    const baseY = H - 70;
+    const rockCount = Math.min(1 + idx, 6);
+    for(let i=0;i<rockCount;i++){
+      const rw = rnd(60,140), rh = rnd(28,48);
+      const rx = rnd(80, W-160);
+      const ry = baseY - rh + rnd(-20,20) - idx*3; // slight uneven with level
+      rocks.push({x: rx, y: ry, w: rw, h: rh});
+    }
+    // Ensure not covering cow position
+    rocks = rocks.filter(r => !(r.x < cowPos.x + 40 && r.x + r.w > cowPos.x - 40 && r.y < cowPos.y + 10));
   }
 
-  // ===== GAME FUNCTIONS =====
   function startLevel(idx=0){
     levelIndex = clamp(idx,0,LEVELS-1);
-    timeTarget = LEVEL_TIMES[levelIndex];
-    totalInk = INK_PER_LEVEL[levelIndex];
-    inkLeft = totalInk;
-    lines = []; currentStroke = []; strokesLenBuf = 0;
-    bees = []; lastSpawn = 0; timeElapsed = 0; running = true;
-    spawnInterval = Math.max(0.25, START_SPAWN_INTERVAL * Math.pow(SPAWN_DECAY, levelIndex));
-    beeSpeed = START_BEE_SPEED + BEE_SPEED_INC*levelIndex;
+    inkLeft = INK_PER_LEVEL[levelIndex];
+    lines = []; currentStroke = []; isDrawing=false;
+    bees = [];
+    makeRocksForLevel(levelIndex);
+    spawnInterval = Math.max(0.25, START_SPAWN * Math.pow(SPAWN_DECAY, levelIndex));
+    beeSpeed = START_BEE_SPEED + BEE_SPEED_INC * levelIndex;
+    spawnTimer = 0;
+    timeElapsed = 0;
+    surviveTime = SURVIVE_TIMES[levelIndex];
+    running = true; attackPhase = false;
     levelBadge.textContent = `Level ${levelIndex+1} / ${LEVELS}`;
-    updateInkUI();
-    updateTimeUI();
-    hint.textContent = `Survive ${timeTarget}s — Draw lines to block bees`;
+    timeBadge.textContent = `Survive: ${surviveTime}s`;
+    phaseHint.textContent = 'Draw lines near the cow. After you finish drawing, bees will attack.';
     endModal.classList.remove('open');
-    // unlock audio on first interaction policy
+    // unlock audio
     canvas.focus();
   }
 
-  function updateInkUI(){
-    const pct = clamp(inkLeft/totalInk,0,1);
-    inkFill.style.width = `${pct*100}%`;
-    inkText.textContent = `${Math.round(inkLeft)} / ${totalInk}`;
-  }
-  function updateTimeUI(){
-    const rem = Math.max(0, timeTarget - timeElapsed);
-    timeBadge.textContent = `Time: ${rem.toFixed(1)}s`;
+  // ---------- DRAWING INPUT ----------
+  function toCanvasPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    const x = (p.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (p.clientY - rect.top) * (canvas.height / rect.height);
+    return {x,y};
   }
 
-  // spawn bee at random edge
+  // Determine if a point is over rock (disallow drawing there)
+  function pointOverRock(p){
+    for(const r of rocks) if(pointInRect(p,r)) return true;
+    return false;
+  }
+
+  canvas.addEventListener('pointerdown', (ev)=>{
+    if(!running) return;
+    if(attackPhase) return; // cannot draw during attack
+    const p = toCanvasPos(ev);
+    // require start near cow (generous)
+    const d = Math.hypot(p.x - cowPos.x, p.y - cowPos.y);
+    if(d > 180){ hintFlash('Start your stroke near the cow'); return; }
+    if(pointOverRock(p)){ hintFlash('Cannot draw on rock!'); return; }
+    isDrawing = true; currentStroke = [{x:p.x,y:p.y}];
+    ev.preventDefault();
+  }, {passive:false});
+
+  canvas.addEventListener('pointermove', (ev)=>{
+    if(!isDrawing) return;
+    const p = toCanvasPos(ev); const prev = currentStroke[currentStroke.length-1];
+    const dx = p.x - prev.x, dy = p.y - prev.y; const d = Math.hypot(dx,dy);
+    if(d < 3) return;
+    // sample
+    const steps = Math.floor(d / SAMPLE_STEP) || 1;
+    for(let i=1;i<=steps;i++){
+      const t = i/steps;
+      const nx = prev.x + dx*t, ny = prev.y + dy*t;
+      // stop sampling if inside rock; create hole
+      if(pointOverRock({x:nx,y:ny})){ 
+        // finalize currentStroke up to here then finish drawing
+        currentStroke.push({x:nx,y:ny}); finalizeStroke();
+        return;
+      }
+      currentStroke.push({x:nx,y:ny});
+      inkLeft -= Math.hypot(dx/steps, dy/steps);
+      if(inkLeft <= 0){ inkLeft = 0; finalizeStroke(); return; }
+    }
+  }, {passive:true});
+
+  window.addEventListener('pointerup', ()=>{ if(isDrawing) finalizeStroke(); });
+
+  function finalizeStroke(){
+    if(currentStroke.length >= 2){
+      if(lines.length >= 6) lines.shift(); // limit count
+      lines.push({points: currentStroke.slice(), created: now(), life: LINE_LIFE});
+      // after user finishes a stroke, trigger attack after short delay
+      triggerAttackSoon();
+    }
+    currentStroke = []; isDrawing = false;
+  }
+
+  let attackTimeout = null;
+  function triggerAttackSoon(){
+    if(attackPhase) return;
+    if(attackTimeout) clearTimeout(attackTimeout);
+    attackTimeout = setTimeout(()=>{ startAttackPhase(); }, 700); // bees start 0.7s after drawing ends
+  }
+
+  // ---------- BEES ----------
   function spawnBee(){
     if(bees.length >= MAX_BEES) return;
     const side = Math.floor(Math.random()*4);
     let x,y;
-    const pad = 20;
-    if(side===0){ x = rnd(-20, W+20); y = -20; } // top
-    else if(side===1){ x = W + 20; y = rnd(-20, H+20);} // right
-    else if(side===2){ x = rnd(-20, W+20); y = H + 20;} // bottom
-    else { x = -20; y = rnd(-20, H+20);} // left
-    // optionally bias spawn toward cow for higher levels
-    if(levelIndex >= 2 && Math.random()<0.4){
-      // pick spawn near cow but off-screen
-      const dir = Math.random()*Math.PI*2;
-      x = clamp(W/2 + Math.cos(dir)*(Math.max(W,H)/2 + 80), -40, W+40);
-      y = clamp(H/2 + Math.sin(dir)*(Math.max(W,H)/2 + 80), -40, H+40);
-    }
-    const angle = Math.atan2((H/2) - y, (W/2) - x) + rnd(-0.7, 0.7); // roughly toward center
-    const speed = beeSpeed * rnd(0.85, 1.15);
-    bees.push({x,y,vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed, r:BEE_RADIUS, life:999});
+    if(side===0){ x = rnd(20, W-20); y = -30; } // top
+    else if(side===1){ x = W+30; y = rnd(20, H/2); } // right
+    else if(side===2){ x = rnd(20, W-20); y = H+40; } // bottom
+    else { x = -30; y = rnd(20, H/2); } // left
+    const angle = Math.atan2((cowPos.y - y), (cowPos.x - x)) + rnd(-0.6,0.6);
+    const sp = beeSpeed * rnd(0.85, 1.15);
+    bees.push({x,y,vx: Math.cos(angle)*sp, vy: Math.sin(angle)*sp, r: BEE_R});
+    buzz(0.03);
   }
 
-  // sample stroke between two points with step SAMPLE_DIST
-  function sampleAdd(prev, cur, arr){
-    const dx = cur.x - prev.x, dy = cur.y - prev.y;
-    const dist = Math.hypot(dx,dy) || 0.001;
-    const steps = Math.floor(dist / SAMPLE_DIST);
-    for(let i=1;i<=steps;i++){
-      const t = i/steps;
-      arr.push({x: prev.x + dx*t, y: prev.y + dy*t});
-    }
-  }
-
-  // handle drawing input (pointer events)
-  function toCanvasPos(e){
-    const r = canvas.getBoundingClientRect();
-    const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    const x = (p.clientX - r.left) * (canvas.width / r.width);
-    const y = (p.clientY - r.top) * (canvas.height / r.height);
-    return {x,y};
-  }
-
-  canvas.addEventListener('pointerdown', (ev)=>{
-    ev.preventDefault();
-    const p = toCanvasPos(ev);
-    // require start near cow center (give generous radius)
-    const dx = p.x - W/2, dy = p.y - H/2;
-    const startDist = Math.hypot(dx,dy);
-    if(startDist > 140){
-      // allow if last lines near cow; but prefer to encourage start near cow
-      hintFlash('Start near the cow!');
-      return;
-    }
-    if(inkLeft <= 4){ hintFlash('Ink exhausted!'); return; }
-    isDrawing = true;
-    currentStroke = [{x: p.x, y: p.y}];
-    strokesLenBuf = 0;
-    ensureAudio();
-    if(!muted) playPop(); // small draw sound
-  }, {passive:false});
-
-  window.addEventListener('pointermove', (ev)=>{
-    if(!isDrawing) return;
-    ev.preventDefault();
-    const p = toCanvasPos(ev);
-    const prev = currentStroke[currentStroke.length-1];
-    const dx = p.x - prev.x, dy = p.y - prev.y;
-    const d = Math.hypot(dx,dy);
-    if(d < 3) return;
-    // sample points at SAMPLE_DIST
-    sampleAdd(prev, p, currentStroke);
-    currentStroke.push({x: p.x, y: p.y});
-    strokesLenBuf += d;
-    // consume ink gradually; cap it
-    if(strokesLenBuf >= SAMPLE_DIST){
-      const use = Math.min(inkLeft, strokesLenBuf);
-      inkLeft -= use;
-      strokesLenBuf = 0;
-      updateInkUI();
-      if(inkLeft <= 0){ isDrawing = false; finalizeStroke(); hintFlash('Ink depleted'); }
-    }
-  }, {passive:false});
-
-  window.addEventListener('pointerup', (ev)=>{
-    if(!isDrawing) return;
-    finalizeStroke();
-  });
-
-  function finalizeStroke(){
-    if(currentStroke.length < 2) { currentStroke = []; return; }
-    if(lines.length >= MAX_ACTIVE_LINES){ // remove oldest
-      lines.shift();
-    }
-    lines.push({points: currentStroke.slice(), created: now(), life: LINE_LIFE});
-    currentStroke = [];
-    // small feedback
-    if(!muted) playPop();
-  }
-
-  // remove expired lines
-  function pruneLines(){
-    const t = now();
-    lines = lines.filter(L => (t - L.created) < L.life);
-  }
-
-  // reflect bees on lines
-  function handleBeeLineCollision(bee){
+  // Bee collision with lines: if close to any segment, reflect a bit
+  function handleBeeLineCollision(b){
     for(const L of lines){
       const pts = L.points;
       for(let i=0;i<pts.length-1;i++){
-        const a = pts[i], b = pts[i+1];
-        const d = segDist(a,b,bee);
-        if(d < bee.r + 4){ // collision threshold
-          // compute normal from segment
-          const sx = b.x - a.x, sy = b.y - a.y;
-          const len = Math.hypot(sx,sy) || 1;
-          const nx = -sy/len, ny = sx/len; // perpendicular
-          // push bee out
-          bee.x += nx*(bee.r + 4 - d);
-          bee.y += ny*(bee.r + 4 - d);
-          // reflect vel with slight damp
-          const out = reflect(bee.vx, bee.vy, nx, ny);
-          bee.vx = out.vx * 0.9; bee.vy = out.vy * 0.9;
-          // small pop sound
-          if(!muted) playPop();
+        const a = pts[i], bb = pts[i+1];
+        const d = segDist(a,bb,b);
+        if(d < b.r + 4){
+          // compute normal (perp to segment)
+          const sx = bb.x - a.x, sy = bb.y - a.y; const len = Math.hypot(sx,sy) || 1;
+          const nx = -sy/len, ny = sx/len;
+          // push out
+          b.x += nx*(b.r + 4 - d);
+          b.y += ny*(b.r + 4 - d);
+          // reflect velocity
+          const dot = b.vx*nx + b.vy*ny;
+          b.vx = b.vx - 2*dot*nx; b.vy = b.vy - 2*dot*ny;
+          // small damping
+          b.vx *= 0.86; b.vy *= 0.86;
+          // pop sound
+          beep(420,0.06,0.03);
           return;
         }
       }
     }
   }
 
-  // check bee->cow
-  function checkBeeCow(bee){
-    const dx = bee.x - W/2, dy = bee.y - H/2;
-    const d = Math.hypot(dx,dy);
-    return d < (bee.r + COW_RADIUS - 2);
+  // check if bee finds a hole in lines near cow path: bee can go through any area not covered by barrier
+  function beeFindsHole(b){
+    // check if any line segment lies between bee and cow near crossing point
+    // simple approach: cast a ray from bee->cow and see if any segment intersects that ray; if none then it's a "hole"
+    const A = {x: b.x, y: b.y}, B = {x: cowPos.x, y: cowPos.y};
+    for(const L of lines){
+      const pts = L.points;
+      for(let i=0;i<pts.length-1;i++){
+        if(segmentsIntersect(A,B, pts[i], pts[i+1])) return false; // segment blocks ray
+      }
+    }
+    return true; // no segment intersects => hole exists
   }
 
-  // draw cow with mood
-  let cowMood = 'neutral'; // 'neutral'|'happy'|'sad'
-  let cowSadBumps = []; // positions for red bumps
+  // basic segment intersection test
+  function ccw(p1,p2,p3){ return (p3.y-p1.y)*(p2.x-p1.x) > (p2.y-p1.y)*(p3.x-p1.x); }
+  function segmentsIntersect(a,b,c,d){
+    return (ccw(a,c,d) !== ccw(b,c,d)) && (ccw(a,b,c) !== ccw(a,b,d));
+  }
+
+  // ---------- GAME LOOP ----------
+  let last = performance.now()/1000;
+  function loop(){
+    const nowT = performance.now()/1000;
+    const dt = Math.min(0.033, nowT - last); last = nowT;
+    if(running && attackPhase){
+      // spawn bees periodically
+      spawnTimer += dt;
+      if(spawnTimer >= spawnInterval){
+        spawnBee(); spawnTimer = 0;
+      }
+      // update bees
+      for(let i=bees.length-1;i>=0;i--){
+        const b = bees[i];
+        // steer toward cow but if there's a blocking line, try to move to find hole (small randomness)
+        const dirx = cowPos.x - b.x + rnd(-20,20);
+        const diry = cowPos.y - b.y + rnd(-20,20);
+        const len = Math.hypot(dirx,diry)||1;
+        const desiredSpeed = beeSpeed * rnd(0.9,1.15);
+        b.vx += ((dirx/len)*desiredSpeed - b.vx) * 0.06;
+        b.vy += ((diry/len)*desiredSpeed - b.vy) * 0.06;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        handleBeeLineCollision(b);
+
+        // if bee close enough to cow and there is a hole along ray -> sting
+        const dCow = Math.hypot(b.x - cowPos.x, b.y - cowPos.y);
+        if(dCow < COW_R + b.r + 2){
+          // when close, check if there is a blocking line between bee and cow
+          if(beeFindsHole(b)){
+            // sting -> game over
+            running = false;
+            attackPhase = false;
+            hurtTone();
+            endEmoji.textContent = '💥';
+            endTitle.textContent = 'Game Over — Cow got stung!';
+            endText.textContent = `You reached Level ${levelIndex+1}.`;
+            endModal.classList.add('open');
+            localStorage.setItem('lamumu_best', String(Math.max(levelIndex, bestLevel)));
+            bestBadge.textContent = `Best Lvl: ${Math.max(levelIndex, bestLevel)}`;
+            return;
+          } else {
+            // blocked by line, reflect or bounce: handled in collision
+          }
+        }
+
+        // remove bees far outside
+        if(b.x < -120 || b.x > W+120 || b.y < -120 || b.y > H+120) bees.splice(i,1);
+      }
+
+      // time
+      timeElapsed += dt;
+      const rem = Math.max(0, surviveTime - timeElapsed);
+      timeBadge.textContent = `Survive: ${rem.toFixed(1)}s`;
+      if(timeElapsed >= surviveTime){
+        // level cleared
+        running = false;
+        attackPhase = false;
+        happyTone();
+        endEmoji.textContent = '🎉';
+        if(levelIndex < LEVELS - 1){
+          endTitle.textContent = 'Level Cleared!';
+          endText.textContent = `Ready for level ${levelIndex+2}`;
+          endModal.classList.add('open');
+          // update best
+          bestLevel = Math.max(bestLevel, levelIndex+1);
+          localStorage.setItem('lamumu_best', String(bestLevel));
+          bestBadge.textContent = `Best Lvl: ${bestLevel}`;
+          setTimeout(()=>{ startLevel(levelIndex+1); }, 800);
+        } else {
+          endTitle.textContent = 'Congrats — You cleared all levels!';
+          endText.textContent = `Final Victory — Lamumu is safe!`;
+          endModal.classList.add('open');
+          bestLevel = Math.max(bestLevel, levelIndex+1);
+          localStorage.setItem('lamumu_best', String(bestLevel));
+        }
+      }
+    }
+
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- DRAW ----------
   function drawCow(){
-    const cx = W/2, cy = H/2;
+    const cx = cowPos.x, cy = cowPos.y;
     // shadow
-    ctx.save(); ctx.globalAlpha = 0.24; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(cx, cy+30, 40, 12, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(cx, cy+26, 40, 12, 0,0,Math.PI*2); ctx.fill(); ctx.restore();
     // body
     ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx-36, cy-44, 72, 44);
     // spots
-    ctx.fillStyle = '#111827'; ctx.fillRect(cx-20, cy-36, 14, 8); ctx.fillRect(cx+8, cy-28, 10, 6);
+    ctx.fillStyle = '#111827'; ctx.fillRect(cx-18, cy-36, 14, 8); ctx.fillRect(cx+8, cy-28, 12, 6);
     // head
     ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx+36, cy-40, 22, 18);
-    // eye
-    ctx.fillStyle = '#111827';
-    if(cowMood==='happy'){ ctx.fillRect(cx+44, cy-34, 6, 6); ctx.fillStyle='#111827'; ctx.fillRect(cx+2, cy-32, 4, 4); }
-    else if(cowMood==='sad'){ ctx.fillRect(cx+44, cy-34, 4, 4); ctx.fillStyle='#111827'; ctx.fillRect(cx+2, cy-32, 3, 3); }
-    else { ctx.fillRect(cx+44, cy-34, 4, 4); ctx.fillRect(cx+2, cy-32, 3, 3); }
-    // nose
-    ctx.fillStyle = '#f9a8d4'; ctx.fillRect(cx+38, cy-24, 10, 6);
+    ctx.fillStyle = '#111827'; ctx.fillRect(cx+44, cy-34, 4,4);
+    ctx.fillStyle = '#f9a8d4'; ctx.fillRect(cx+38, cy-24, 10,6);
     // legs
     ctx.fillStyle = '#e5e7eb'; ctx.fillRect(cx-28, cy+2, 10, 12); ctx.fillRect(cx+16, cy+2, 10, 12);
     // lamumu band
     ctx.fillStyle = 'var(--lam)'; ctx.fillRect(cx-36, cy-52, 72, 8);
     ctx.fillStyle = '#fde047'; ctx.fillRect(cx-2, cy-48, 8, 10);
-    // sad bumps
-    if(cowMood === 'sad'){
-      ctx.fillStyle = 'rgba(239,68,68,0.95)';
-      for(const b of cowSadBumps){ ctx.beginPath(); ctx.ellipse(cx + b.x, cy + b.y, 6, 6, 0,0,Math.PI*2); ctx.fill(); }
+  }
+
+  function draw(){
+    // background
+    const g = ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#072f3f'); g.addColorStop(1,'#061a22');
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+    // ground grass strip
+    ctx.fillStyle = '#0c3b20'; ctx.fillRect(0, H-80, W, 80);
+    // draw rocks
+    for(const r of rocks){
+      ctx.fillStyle = ROCK_COLOR;
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.strokeRect(r.x+0.5, r.y+0.5, r.w-1, r.h-1);
     }
-  }
 
-  // draw bees
-  function drawBee(b){
-    ctx.save();
-    ctx.translate(b.x, b.y);
-    ctx.beginPath(); ctx.fillStyle = '#fde047'; ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#111827'; ctx.fillRect(-b.r*0.4, -b.r*0.6, b.r*0.8, b.r*0.5);
-    // wings simple
-    ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(-b.r*0.7, -b.r*0.9, b.r*0.45, b.r*0.2, 0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(b.r*0.1, -b.r*0.9, b.r*0.45, b.r*0.2, 0,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
+    // hive (top-left or top-right based on level variety)
+    const hiveX = (levelIndex % 2 === 0) ? 80 : W-140;
+    const hiveY = 80;
+    // hive body
+    ctx.save(); ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.ellipse(hiveX+30, hiveY, 36, 30, 0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#78350f'; ctx.fillRect(hiveX+18, hiveY+4, 24, 10); ctx.restore();
+    // hive label
+    ctx.fillStyle = '#fde047'; ctx.font = '12px system-ui'; ctx.fillText('Hive', hiveX+8, hiveY-32);
 
-  // draw lines & strokes
-  function drawLines(){
-    ctx.lineWidth = 8; ctx.lineCap='round'; ctx.lineJoin='round';
+    // draw lines
+    ctx.lineWidth = LINE_THICK; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle = 'rgba(248,250,252,0.98)';
     for(const L of lines){
-      const age = now() - L.created;
-      const alpha = clamp(1 - (age / L.life), 0, 1);
-      ctx.globalAlpha = 0.9 * alpha;
-      ctx.strokeStyle = 'rgba(248,250,252,0.98)';
       ctx.beginPath();
       const pts = L.points;
       ctx.moveTo(pts[0].x, pts[0].y);
       for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
       ctx.stroke();
     }
-    // current stroke
+    // draw current stroke
     if(currentStroke.length > 0){
-      ctx.globalAlpha = 0.95;
-      ctx.strokeStyle = 'rgba(248,250,252,0.98)';
-      ctx.beginPath();
-      ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
+      ctx.beginPath(); ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
       for(let i=1;i<currentStroke.length;i++) ctx.lineTo(currentStroke[i].x, currentStroke[i].y);
       ctx.stroke();
     }
-    ctx.globalAlpha = 1;
-  }
-
-  // main draw
-  function draw(){
-    // background
-    const g = ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#072f3f'); g.addColorStop(1,'#061a22');
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-    // decorative stars/texture
-    ctx.save(); ctx.globalAlpha = 0.08;
-    for(let i=0;i<40;i++){ const x=(i*97)%W; const y=(i*61)%H; ctx.fillStyle = (i%3? '#7dd3fc':'#e2e8f0'); ctx.fillRect(x+Math.sin(performance.now()*0.0006+i)*3, y, 2, 2); }
-    ctx.restore();
-
-    // draw lines
-    drawLines();
 
     // draw bees
     for(const b of bees) drawBee(b);
 
-    // draw cow in center
+    // draw cow
     drawCow();
 
-    // UI overlay text small
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(12, 12, 260, 36);
+    // UI small overlay
+    ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(12,12,240,36);
   }
 
-  // hints flash
+  function drawBee(b){
+    ctx.save(); ctx.translate(b.x, b.y);
+    ctx.beginPath(); ctx.fillStyle = '#fde047'; ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#111827'; ctx.fillRect(-b.r*0.35, -b.r*0.6, b.r*0.7, b.r*0.45);
+    ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.beginPath(); ctx.ellipse(-b.r*0.6, -b.r*0.95, b.r*0.45, b.r*0.2,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(b.r*0.1, -b.r*0.95, b.r*0.45, b.r*0.2,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // hint flash
   let hintTimer = null;
   function hintFlash(txt){
-    const prev = hint.textContent;
-    hint.textContent = txt;
+    const prev = phaseHint.textContent;
+    phaseHint.textContent = txt;
     clearTimeout(hintTimer);
-    hintTimer = setTimeout(()=>{ hint.textContent = prev; }, 900);
+    hintTimer = setTimeout(()=>{ phaseHint.textContent = prev; }, 1000);
   }
 
-  // ===== GAME LOOP =====
-  let last = performance.now()/1000;
-  function loop(){
-    const nowT = performance.now()/1000;
-    const dt = Math.min(0.033, nowT - last); last = nowT;
-
-    if(running){
-      // spawn logic
-      lastSpawn += dt;
-      if(lastSpawn >= spawnInterval){
-        spawnBee(); lastSpawn = 0;
-      }
-
-      // prune lines
-      pruneLines();
-
-      // update bees
-      for(let i = bees.length-1; i>=0; i--){
-        const b = bees[i];
-        // small random jitter to pathing
-        const jitter = 0.9;
-        const dirx = (W/2) - b.x + rnd(-jitter,jitter)*30;
-        const diry = (H/2) - b.y + rnd(-jitter,jitter)*30;
-        const len = Math.hypot(dirx,diry) || 1;
-        const desiredVx = (dirx/len) * Math.hypot(b.vx, b.vy);
-        const desiredVy = (diry/len) * Math.hypot(b.vx, b.vy);
-        // slightly steer towards cow
-        b.vx += (desiredVx - b.vx) * 0.04;
-        b.vy += (desiredVy - b.vy) * 0.04;
-        // clamp speed
-        const spd = Math.hypot(b.vx, b.vy);
-        const maxSpd = beeSpeed * (1 + (Math.random()*0.12 - 0.06));
-        if(spd > maxSpd){
-          b.vx = b.vx / spd * maxSpd;
-          b.vy = b.vy / spd * maxSpd;
-        }
-        // integrate
-        b.x += b.vx * dt; b.y += b.vy * dt;
-        // collide with lines
-        handleBeeLineCollision(b);
-        // screen bounds bounce (soft)
-        if(b.x < -60 || b.x > W+60 || b.y < -60 || b.y > H+60){
-          // remove if off far away
-          bees.splice(i,1); continue;
-        }
-        // check cow collision
-        if(checkBeeCow(b)){
-          // hit!
-          running = false;
-          cowMood = 'sad';
-          // place red bumps randomly on cow
-          cowSadBumps = [];
-          const bumps = 4 + Math.floor(Math.random()*3);
-          for(let k=0;k<bumps;k++) cowSadBumps.push({x: rnd(-18,18), y: rnd(-10,10)});
-          playHurt();
-          // show modal after small delay
-          setTimeout(()=> {
-            endEmoji.textContent = '💔';
-            endTitle.textContent = 'Oh no — Cow got stung!';
-            endText.textContent = `Level ${levelIndex+1} failed. Try again.`;
-            endModal.classList.add('open');
-            // store best
-            localStorage.setItem('lamumu_best', String(Math.max(bestLevel, levelIndex)));
-            bestLevel = Math.max(bestLevel, levelIndex);
-            bestBadge.textContent = `Best: ${bestLevel}`;
-          }, 450);
-          break;
-        }
-      }
-
-      // time update
-      if(running){
-        timeElapsed += dt;
-        updateTimeUI();
-        // win condition for level
-        if(timeElapsed >= timeTarget){
-          running = false;
-          cowMood = 'happy';
-          playHappy();
-          // proceed next (or final)
-          setTimeout(()=> {
-            if(levelIndex < LEVELS - 1){
-              levelIndex++;
-              // show brief happy modal then reset
-              endEmoji.textContent = '😊';
-              endTitle.textContent = 'Level cleared!';
-              endText.textContent = `Good job — loading next level...`;
-              endModal.classList.add('open');
-              // update best
-              bestLevel = Math.max(bestLevel, levelIndex);
-              localStorage.setItem('lamumu_best', String(bestLevel));
-              bestBadge.textContent = `Best: ${bestLevel}`;
-              setTimeout(()=>{ startLevel(levelIndex); }, 600);
-            } else {
-              // final win
-              endEmoji.textContent = '🎉';
-              endTitle.textContent = 'Congratulations! You’re a true Lamumuion 🐮😍';
-              endText.textContent = `You cleared all ${LEVELS} levels!`;
-              endModal.classList.add('open');
-              // update best
-              bestLevel = Math.max(bestLevel, levelIndex+1);
-              localStorage.setItem('lamumu_best', String(bestLevel));
-              bestBadge.textContent = `Best: ${bestLevel}`;
-            }
-          }, 350);
-        }
-      }
-    }
-
-    // draw
-    draw();
-    requestAnimationFrame(loop);
-  }
-
-  // ===== UI Hooks =====
-  document.getElementById('clearBtn').addEventListener('click', ()=>{
-    lines = []; currentStroke = []; inkLeft = totalInk; updateInkUI(); hintFlash('Cleared lines');
+  // ---------- CONTROLS ----------
+  startBtn.addEventListener('click', ()=>{
+    startBtn.disabled = true; // avoid double
+    ensureAudio();
+    startLevel(0);
+    // small start beep
+    beep(480,0.08,0.06);
+    setTimeout(()=>{ startBtn.disabled = false; }, 400);
   });
-  document.getElementById('resetBtn').addEventListener('click', ()=> startLevel(levelIndex));
-  document.getElementById('muteBtn').addEventListener('click', ()=>{
-    muted = !muted;
-    document.getElementById('muteBtn').textContent = muted ? 'Unmute' : 'Mute';
-  });
-  document.getElementById('replayBtn').addEventListener('click', ()=>{
+
+  replayBtn.addEventListener('click', ()=>{
     endModal.classList.remove('open');
     startLevel(0);
   });
 
-  // prevent page scroll while drawing on mobile
-  canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); }, {passive:false});
+  // start attack phase: bees spawn and attack
+  function startAttackPhase(){
+    if(attackPhase || !running) return;
+    attackPhase = true;
+    spawnTimer = 0;
+    // spawn a few immediate bees for pressure
+    for(let i=0;i<Math.min(2 + levelIndex, 6); i++) spawnBee();
+  }
 
-  // start first level and game loop
-  startLevel(0);
-  requestAnimationFrame(loop);
+  // ---------- INIT ----------
+  function init(){
+    // friendly initial screen: waiting for start
+    draw();
+    requestAnimationFrame(loop);
+  }
 
-  // auto resume audio on first user gesture to avoid Chrome autoplay block
-  document.addEventListener('pointerdown', function unlockAudio(){
-    try{ ensureAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }catch(e){}
-    document.removeEventListener('pointerdown', unlockAudio);
-  });
+  // unlock audio on first interaction
+  document.addEventListener('pointerdown', function unlock(){ try{ if(!audioCtx) ensureAudio(); if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); }catch(e){} document.removeEventListener('pointerdown', unlock); });
 
+  init();
 })();
 </script>
 </body>
