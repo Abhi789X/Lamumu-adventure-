@@ -1,690 +1,814 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Lamumu vs Bee — 30s Survival</title>
-<style>
-  :root{
-    --bg1:#07202b; --bg2:#04232f; --card:#0b2736; --fg:#eef6ff;
-    --muted:#9fb0c4; --accent:#7dd3fc; --lam:#facc15; --danger:#ef4444;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-  body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,var(--bg2),var(--bg1));color:var(--fg);padding:12px}
-  .wrap{width:min(980px,96vw);max-width:980px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 30px 90px rgba(0,0,0,0.6)}
-  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-  .title{font-weight:800;font-size:18px}
-  .hud{display:flex;gap:10px;align-items:center}
-  .badge{background:rgba(255,255,255,0.04);padding:6px 10px;border-radius:10px;font-weight:700}
-  canvas{background:linear-gradient(180deg,#07323f,#04202c);border-radius:10px;border:1px solid rgba(255,255,255,0.03);display:block;touch-action:none}
-  .controls{margin-top:10px;display:flex;gap:8px;align-items:center}
-  .btn{background:linear-gradient(90deg,#3b82f6,#06b6d4);border:none;padding:10px 14px;border-radius:10px;color:white;font-weight:800;cursor:pointer}
-  .small{color:var(--muted);font-size:13px}
-  .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.55)}
-  .modal.open{display:flex}
-  .card{background:linear-gradient(180deg,#0f2435,#08121a);border-radius:14px;padding:20px;text-align:center;color:var(--fg);width:min(92%,520px);box-shadow:0 30px 90px rgba(0,0,0,0.6)}
-  .replay{margin-top:14px;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,#34d399,#38bdf8);font-weight:800;color:#04202a;cursor:pointer}
-  .hint{font-size:13px;color:var(--muted)}
-  @media(max-width:760px){ .wrap{padding:8px} canvas{width:100%;height:auto} }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protect The Cow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #start-screen, #game-over-screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
+        
+        #game-over-screen {
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            display: none;
+        }
+        
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #2E7D32;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        h2 {
+            font-size: 36px;
+            margin-bottom: 30px;
+        }
+        
+        p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+        
+        button {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #388E3C;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        #game-screen {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: none;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #level-info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2E7D32;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        #timer {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #F44336;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 16px;
+            color: #555;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cow {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 60px;
+            background: #8B4513;
+            border-radius: 40% 40% 30% 30%;
+            z-index: 10;
+        }
+        
+        .cow::before, .cow::after {
+            content: '';
+            position: absolute;
+            background: #8B4513;
+            border-radius: 50%;
+        }
+        
+        .cow::before {
+            width: 30px;
+            height: 25px;
+            top: -15px;
+            left: 15px;
+        }
+        
+        .cow::after {
+            width: 20px;
+            height: 15px;
+            top: -10px;
+            right: 15px;
+        }
+        
+        .eye {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            top: -8px;
+        }
+        
+        .eye.left { left: 25px; }
+        .eye.right { right: 25px; }
+        
+        .grass {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to bottom, #4CAF50, #388E3C);
+            z-index: 5;
+        }
+        
+        .hive {
+            position: absolute;
+            top: 30px;
+            width: 60px;
+            height: 80px;
+            background: #FFA000;
+            border-radius: 50% 50% 40% 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .hive::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 15px;
+            background: #795548;
+            border-radius: 5px;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .bee {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #FFC107;
+            border-radius: 50%;
+            z-index: 10;
+        }
+        
+        .bee::before {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #000;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+        }
+        
+        .bee::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 5px;
+            border: 1px solid #000;
+            border-radius: 50%;
+            top: 2px;
+            left: -3px;
+        }
+        
+        .rock {
+            position: absolute;
+            background: #78909C;
+            border-radius: 40% 40% 30% 30%;
+            z-index: 4;
+        }
+        
+        .win-text {
+            color: #4CAF50;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .lose-text {
+            color: #F44336;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        #mute-btn {
+            position: absolute;
+            top: 60px;
+            right: 15px;
+            padding: 8px 15px;
+            font-size: 14px;
+            background: #9E9E9E;
+        }
+        
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        
+        .cloud1 {
+            width: 100px;
+            height: 60px;
+            top: 40px;
+            left: 100px;
+        }
+        
+        .cloud2 {
+            width: 120px;
+            height: 70px;
+            top: 70px;
+            right: 80px;
+        }
+        
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .cloud1::before {
+            width: 60px;
+            height: 60px;
+            top: -20px;
+            left: 15px;
+        }
+        
+        .cloud1::after {
+            width: 70px;
+            height: 70px;
+            top: -25px;
+            right: 10px;
+        }
+        
+        .cloud2::before {
+            width: 70px;
+            height: 70px;
+            top: -20px;
+            left: 15px;
+        }
+        
+        .cloud2::after {
+            width: 80px;
+            height: 80px;
+            top: -30px;
+            right: 15px;
+        }
+        
+        .sun {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: #FFEB3B;
+            border-radius: 50%;
+            top: 30px;
+            left: 50px;
+            box-shadow: 0 0 40px #FF9800;
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap" role="application" aria-label="Lamumu vs Bee game">
-    <div class="top">
-      <div>
-        <div class="title">Lamumu vs Bee</div>
-        <div class="small">Draw barriers to protect the cow. Survive 30 seconds.</div>
-      </div>
-      <div class="hud">
-        <div class="badge" id="timerBadge">Time: 30.0s</div>
-        <div class="badge" id="levelBadge">Difficulty</div>
-      </div>
+    <div id="game-container">
+        <div id="start-screen">
+            <h1>Protect The Cow 🐄</h1>
+            <p>Draw lines to protect the cow from attacking bees!<br>Make sure your line has no gaps or the bees will get through.</p>
+            <p>Survive for 30 seconds in each level to advance!</p>
+            <button id="start-btn">Start Game</button>
+        </div>
+        
+        <div id="game-screen">
+            <div id="level-info">Level: 1</div>
+            <div id="timer">Time: 30s</div>
+            <button id="mute-btn">Sound: ON</button>
+            <div id="canvas-container">
+                <canvas id="game-canvas" width="800" height="600"></canvas>
+            </div>
+            <div id="instructions">Click and drag to draw a protective line</div>
+            
+            <div class="grass"></div>
+            <div class="cow">
+                <div class="eye left"></div>
+                <div class="eye right"></div>
+            </div>
+            <div class="hive"></div>
+            <div class="cloud cloud1"></div>
+            <div class="cloud cloud2"></div>
+            <div class="sun"></div>
+        </div>
+        
+        <div id="game-over-screen">
+            <h2 class="win-text">Congratulations!</h2>
+            <h2 class="lose-text">Game Over!</h2>
+            <p id="result-message">You protected the cow!</p>
+            <button id="restart-btn">Play Again</button>
+        </div>
     </div>
 
-    <canvas id="game" width="960" height="600" aria-label="Lamumu vs Bee canvas"></canvas>
-
-    <div class="controls">
-      <button class="btn" id="startBtn">Start</button>
-      <div class="hint" id="phaseHint">Start → draw lines near the cow to block bees. Lines last a few seconds.</div>
-    </div>
-  </div>
-
-  <div class="modal" id="endModal" role="dialog" aria-modal="true">
-    <div class="card">
-      <div id="endEmoji" style="font-size:44px">🎉</div>
-      <div id="endTitle" style="font-weight:800;margin-top:8px">You Survived!</div>
-      <div id="endText" style="color:var(--muted);margin-top:6px"></div>
-      <button class="replay" id="restartBtn">Restart</button>
-    </div>
-  </div>
-
-<script>
-(() => {
-  // ---------- CONFIG ----------
-  const SURVIVE_TARGET = 30.0;           // seconds to survive
-  const LINE_THICK = 8;
-  const LINE_LIFE = 8.0;                 // seconds each line lasts
-  const MAX_LINES = 6;                   // max concurrent barriers
-  const SAMPLE_DIST = 6;                 // sampling distance for stroke points
-  const COW_RADIUS = 30;
-  const BEE_RADIUS = 9;
-  const HIVE_POS = { x: 140, y: 80 };    // relative; we'll flip depending on difficulty
-  const START_SPAWN_INTERVAL = 1.1;      // initial spawn interval
-  const MIN_SPAWN_INTERVAL = 0.35;
-  const START_BEE_SPEED = 60;
-  const MAX_BEE_SPEED = 280;
-  const MAX_BEES = 40;
-  const DIFFICULTY_RAMP = 1.0 / SURVIVE_TARGET; // linear ramp per second
-
-  // ---------- DOM ----------
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const startBtn = document.getElementById('startBtn');
-  const phaseHint = document.getElementById('phaseHint');
-  const timerBadge = document.getElementById('timerBadge');
-  const levelBadge = document.getElementById('levelBadge');
-  const endModal = document.getElementById('endModal');
-  const endEmoji = document.getElementById('endEmoji');
-  const endTitle = document.getElementById('endTitle');
-  const endText = document.getElementById('endText');
-  const restartBtn = document.getElementById('restartBtn');
-
-  const W = canvas.width, H = canvas.height;
-  const cowPos = { x: W/2, y: H - 90 }; // cow at ground center
-
-  // ---------- STATE ----------
-  let running = false;
-  let timeLeft = SURVIVE_TARGET;
-  let lines = []; // {points:[{x,y}], createdTime}
-  let currentStroke = [];
-  let isDrawing = false;
-  let bees = []; // {x,y,vx,vy,r}
-  let lastSpawn = 0;
-  let spawnInterval = START_SPAWN_INTERVAL;
-  let beeSpeed = START_BEE_SPEED;
-  let startTime = 0;
-  let audioCtx = null;
-  let unlockedAudio = false;
-
-  // ---------- AUDIO (WebAudio) ----------
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  function ensureAudio(){
-    if(!audioCtx) audioCtx = new AudioCtx();
-  }
-  function playTone(freq=440, time=0.08, gain=0.06, type='sine'){
-    try{
-      if(!audioCtx) ensureAudio();
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = type; o.frequency.value = freq;
-      g.gain.value = gain;
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + time);
-      setTimeout(()=>{ try{o.stop()}catch(e){} }, time*1000+20);
-    }catch(e){}
-  }
-  function beeBuzz(){ playTone(180,0.12,0.02,'square'); }
-  function popSound(){ playTone(420,0.06,0.03,'sine'); }
-  function stingSound(){ playTone(160,0.26,0.12,'sine'); }
-  function winSound(){ playTone(520,0.12,0.06,'sine'); setTimeout(()=>playTone(680,0.08,0.05,'sine'),140); }
-
-  // ---------- HELPERS ----------
-  const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
-  const rnd = (a,b) => a + Math.random()*(b-a);
-  const now = () => performance.now()/1000;
-
-  function segDist(ax,ay,bx,by,px,py){
-    const vx = bx-ax, vy = by-ay;
-    const wx = px-ax, wy = py-ay;
-    const c1 = vx*wx + vy*wy;
-    if(c1 <= 0) return Math.hypot(px-ax, py-ay);
-    const c2 = vx*vx + vy*vy;
-    if(c2 <= c1) return Math.hypot(px-bx, py-by);
-    const t = c1 / c2;
-    const projx = ax + t*vx, projy = ay + t*vy;
-    return Math.hypot(px-projx, py-projy);
-  }
-
-  function ccw(p1,p2,p3){ return (p3.y-p1.y)*(p2.x-p1.x) > (p2.y-p1.y)*(p3.x-p1.x); }
-  function segmentsIntersect(a,b,c,d){
-    return (ccw(a,c,d) !== ccw(b,c,d)) && (ccw(a,b,c) !== ccw(a,b,d));
-  }
-
-  // ---------- DRAW INPUT (pointer) ----------
-  function toCanvasPos(e){
-    const rect = canvas.getBoundingClientRect();
-    const p = (e.touches && e.touches[0]) ? e.touches[0] : e;
-    const x = (p.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (p.clientY - rect.top) * (canvas.height / rect.height);
-    return {x,y};
-  }
-
-  canvas.addEventListener('pointerdown', (e)=>{
-    if(!running) return;
-    if(e.pointerType === 'mouse' && e.button !== 0) return;
-    const p = toCanvasPos(e);
-    // require start reasonably near cow (friendly)
-    const d = Math.hypot(p.x - cowPos.x, p.y - cowPos.y);
-    if(d > 220){ flashHint('Start near the cow'); return; }
-    // begin stroke
-    isDrawing = true;
-    currentStroke = [{x:p.x, y:p.y}];
-    e.preventDefault();
-    if(!unlockedAudio){ ensureAudio(); unlockedAudio = true; }
-  }, {passive:false});
-
-  window.addEventListener('pointermove', (e)=>{
-    if(!isDrawing) return;
-    const p = toCanvasPos(e); const prev = currentStroke[currentStroke.length-1];
-    const dx = p.x - prev.x, dy = p.y - prev.y;
-    const d = Math.hypot(dx,dy);
-    if(d < 3) return;
-    const steps = Math.max(1, Math.floor(d / SAMPLE_DIST));
-    for(let i=1;i<=steps;i++){
-      const t = i/steps;
-      currentStroke.push({x: prev.x + dx*t, y: prev.y + dy*t});
-    }
-  }, {passive:true});
-
-  window.addEventListener('pointerup', ()=>{
-    if(!isDrawing) return;
-    finalizeStroke();
-  });
-
-  function finalizeStroke(){
-    isDrawing = false;
-    if(currentStroke.length < 2) { currentStroke = []; return; }
-    if(lines.length >= MAX_LINES) lines.shift();
-    lines.push({points: currentStroke.slice(), created: now()});
-    popSound();
-    currentStroke = [];
-  }
-
-  // ---------- BEES ----------
-  function spawnBee(hiveX, hiveY, speed){
-    if(bees.length >= MAX_BEES) return;
-    // spawn slightly offset
-    const angle = rnd(-0.8, 0.8) + Math.atan2(cowPos.y - hiveY, cowPos.x - hiveX);
-    const sp = speed * rnd(0.9, 1.12);
-    bees.push({ x: hiveX + rnd(-8,8), y: hiveY + rnd(-8,8), vx: Math.cos(angle)*sp, vy: Math.sin(angle)*sp, r: BEE_RADIUS });
-    beeBuzz();
-  }
-
-  // reflect bee on any line segment collision
-  function handleBeeLineCollision(b){
-    for(const L of lines){
-      const pts = L.points;
-      for(let i=0;i<pts.length-1;i++){
-        const a = pts[i], bb = pts[i+1];
-        const d = segDist(a.x,a.y,bb.x,bb.y,b.x,b.y);
-        if(d < b.r + 4){
-          // normal
-          const sx = bb.x - a.x, sy = bb.y - a.y;
-          const len = Math.hypot(sx,sy) || 1;
-          const nx = -sy/len, ny = sx/len;
-          // push out
-          b.x += nx*(b.r + 4 - d);
-          b.y += ny*(b.r + 4 - d);
-          // reflect
-          const dot = b.vx*nx + b.vy*ny;
-          b.vx = b.vx - 2*dot*nx; b.vy = b.vy - 2*dot*ny;
-          b.vx *= 0.86; b.vy *= 0.86;
-          popSound();
-          return;
-        }
-      }
-    }
-  }
-
-  // check if there exists any line blocking direct ray from bee to cow
-  function rayBlockedByAnyLine(b){
-    const A = {x: b.x, y: b.y}, B = {x: cowPos.x, y: cowPos.y};
-    for(const L of lines){
-      const pts = L.points;
-      for(let i=0;i<pts.length-1;i++){
-        if(segmentsIntersect(A,B, pts[i], pts[i+1])) return true;
-      }
-    }
-    return false;
-  }
-
-  // ---------- GAME LOOP ----------
-  let last = performance.now()/1000;
-  function loop(){
-    const nowT = performance.now()/1000;
-    const dt = Math.min(0.033, nowT - last); last = nowT;
-
-    if(running){
-      // dynamic difficulty based on elapsed fraction
-      const elapsed = SURVIVE_TARGET - timeLeft;
-      const progress = clamp(elapsed / SURVIVE_TARGET, 0, 1);
-
-      // adjust spawn interval & speed
-      spawnInterval = START_SPAWN_INTERVAL * (1 - progress*0.7);
-      spawnInterval = clamp(spawnInterval, MIN_SPAWN_INTERVAL, START_SPAWN_INTERVAL);
-      beeSpeed = START_BEE_SPEED + (MAX_BEE_SPEED - START_BEE_SPEED) * progress;
-
-      // spawn from hive(s) periodically
-      lastSpawn += dt;
-      if(lastSpawn >= spawnInterval){
-        lastSpawn = 0;
-        // choose hive side: alternate or random
-        const hiveX = (Math.random() < 0.5) ? 140 : W - 140;
-        const hiveY = 80 + rnd(-20,20);
-        // spawn 1-2 bees based on progress
-        const count = (Math.random() < 0.25 + progress*0.75) ? 2 : 1;
-        for(let i=0;i<count;i++) spawnBee(hiveX, hiveY, beeSpeed);
-      }
-
-      // update bees
-      for(let i=bees.length-1;i>=0;i--){
-        const b = bees[i];
-
-        // steer a bit toward cow (with jitter)
-        const dirx = cowPos.x - b.x + rnd(-60,60) * (0.3 + progress*0.7);
-        const diry = cowPos.y - b.y + rnd(-40,40) * (0.3 + progress*0.7);
-        const len = Math.hypot(dirx,diry) || 1;
-        const desiredVx = (dirx/len) * beeSpeed;
-        const desiredVy = (diry/len) * beeSpeed;
-        b.vx += (desiredVx - b.vx) * 0.04;
-        b.vy += (desiredVy - b.vy) * 0.04;
-
-        b.x += b.vx * dt;
-        b.y += b.vy * dt;
-
-        handleBeeLineCollision(b);
-
-        // if close enough to cow, check if blocked
-        const dCow = Math.hypot(b.x - cowPos.x, b.y - cowPos.y);
-        if(dCow < COW_RADIUS + b.r - 2){
-          // if ray is blocked by a line, cannot stab; else sting and lose
-          if(!rayBlockedByAnyLine(b)){
-            // STING -> game over
-            running = false;
-            showEnd(false);
-            stingSound();
-            return;
-          } else {
-            // bounce back a little
-            b.vx *= -0.4; b.vy *= -0.4;
-          }
-        }
-
-        // cull far away bees
-        if(b.x < -120 || b.x > W+120 || b.y < -120 || b.y > H+120) bees.splice(i,1);
-      }
-
-      // update lines life and remove old ones
-      const tNow = now();
-      lines = lines.filter(L => (tNow - L.created) < LINE_LIFE);
-
-      // update timer
-      timeLeft -= dt;
-      timerBadge.textContent = `Time: ${Math.max(0, timeLeft).toFixed(1)}s`;
-      levelBadge.textContent = `Difficulty ${(Math.floor((1 - timeLeft/SURVIVE_TARGET)*100))}%`;
-
-      if(timeLeft <= 0){
-        running = false;
-        showEnd(true);
-        winSound();
-        return;
-      }
-    }
-
-    // draw frame
-    draw();
-    requestAnimationFrame(loop);
-  }
-
-  // ---------- DRAW ----------
-  function draw(){
-    // background
-    const grad = ctx.createLinearGradient(0,0,W,H); grad.addColorStop(0,'#07323f'); grad.addColorStop(1,'#041a24');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
-
-    // distant hills
-    ctx.fillStyle = '#0b2b2b';
-    ctx.beginPath(); ctx.ellipse(W*0.2, H-160, 260, 90, 0, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(W*0.8, H-170, 220, 80, 0, 0, Math.PI*2); ctx.fill();
-
-    // ground
-    ctx.fillStyle = '#0b6b3a'; ctx.fillRect(0, H-90, W, 90);
-
-    // draw hive(s)
-    // left hive
-    drawHive(140, 88);
-    // right hive
-    drawHive(W-140, 88);
-
-    // draw lines
-    ctx.lineWidth = LINE_THICK; ctx.lineCap = 'round'; ctx.lineJoin='round';
-    ctx.strokeStyle = '#fffefc';
-    for(const L of lines){
-      const age = now() - L.created;
-      const alpha = clamp(1 - (age / LINE_LIFE)*1.1, 0, 1);
-      ctx.globalAlpha = alpha;
-      ctx.beginPath();
-      const pts = L.points; ctx.moveTo(pts[0].x, pts[0].y);
-      for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    // draw current stroke
-    if(currentStroke.length > 0){
-      ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = 0.95;
-      ctx.beginPath(); ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
-      for(let i=1;i<currentStroke.length;i++) ctx.lineTo(currentStroke[i].x, currentStroke[i].y);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    // draw bees
-    for(const b of bees) drawBee(b);
-
-    // draw cow in center base
-    drawCow();
-
-    // HUD overlay small
-    ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(12,12,220,36);
-  }
-
-  function drawHive(x,y){
-    ctx.save();
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath(); ctx.ellipse(x, y, 40, 30, 0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#78350f'; ctx.fillRect(x-16, y+6, 32, 12);
-    ctx.fillStyle = '#fde047'; ctx.font = '12px system-ui'; ctx.fillText('Hive', x-18, y-36);
-    ctx.restore();
-  }
-
-  function drawBee(b){
-    ctx.save(); ctx.translate(b.x, b.y);
-    ctx.beginPath(); ctx.fillStyle = '#fde047'; ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#111827'; ctx.fillRect(-b.r*0.34, -b.r*0.6, b.r*0.68, b.r*0.45);
-    ctx.globalAlpha = 0.9; ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.beginPath(); ctx.ellipse(-b.r*0.62, -b.r*0.98, b.r*0.42, b.r*0.18, 0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(b.r*0.12, -b.r*0.98, b.r*0.42, b.r*0.18, 0,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-
-  function drawCow(){
-    const cx = cowPos.x, cy = cowPos.y;
-    // shadow
-    ctx.save(); ctx.globalAlpha = 0.26; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(cx, cy+32, 44, 12, 0,0,Math.PI*2); ctx.fill(); ctx.restore();
-    // body
-    ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx-42, cy-48, 84, 48);
-    // spots
-    ctx.fillStyle = '#111827'; ctx.fillRect(cx-16, cy-36, 16, 10); ctx.fillRect(cx+12, cy-28, 12, 8);
-    // head
-    ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx+42, cy-44, 26, 22);
-    ctx.fillStyle = '#111827'; ctx.fillRect(cx+50, cy-36, 5,5);
-    ctx.fillStyle = '#f9a8d4'; ctx.fillRect(cx+44, cy-22, 12, 8);
-    // legs
-    ctx.fillStyle = '#e5e7eb'; ctx.fillRect(cx-36, cy+2, 12, 14); ctx.fillRect(cx+18, cy+2, 12, 14);
-    // lamumu band
-    ctx.fillStyle = 'var(--lam)'; ctx.fillRect(cx-42, cy-56, 84, 8);
-    ctx.fillStyle = '#fde047'; ctx.fillRect(cx-2, cy-50, 10, 12);
-  }
-
-  // ---------- UI / EVENTS ----------
-  function flashHint(text){
-    const prev = phaseHint.textContent;
-    phaseHint.textContent = text;
-    setTimeout(()=>{ phaseHint.textContent = prev; }, 900);
-  }
-
-  function showEnd(won){
-    endModal.classList.add('open');
-    if(won){
-      endEmoji.textContent = '🎉';
-      endTitle.textContent = 'Congrats — Lamumu Survived!';
-      endText.textContent = `You protected Lamumu for ${SURVIVE_TARGET} seconds.`;
-    } else {
-      endEmoji.textContent = '💀';
-      endTitle.textContent = 'Game Over — Lamumu got stung';
-      endText.textContent = `Try again to protect Lamumu.`;
-    }
-  }
-
-  startBtn.addEventListener('click', ()=>{
-    if(!unlockedAudio) { try{ ensureAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); unlockedAudio = true; }catch(e){} }
-    // reset state
-    lines = []; bees = []; timeLeft = SURVIVE_TARGET; running = true; lastSpawn = 0;
-    startTime = now();
-    endModal.classList.remove('open');
-    timerBadge.textContent = `Time: ${timeLeft.toFixed(1)}s`;
-    phaseHint.textContent = 'Draw barriers; lines last a few seconds.';
-    // small start sound
-    playTone(640,0.08,0.06,'sine');
-  });
-
-  restartBtn.addEventListener('click', ()=>{
-    endModal.classList.remove('open');
-    // restart fresh
-    lines = []; bees = []; timeLeft = SURVIVE_TARGET; running = true; lastSpawn = 0;
-    startTime = now();
-    timerBadge.textContent = `Time: ${timeLeft.toFixed(1)}s`;
-    phaseHint.textContent = 'Draw barriers; lines last a few seconds.';
-  });
-
-  // auto-unlock audio on first pointer
-  document.addEventListener('pointerdown', function unlock(){
-    try{ ensureAudio(); if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }catch(e){}
-    document.removeEventListener('pointerdown', unlock);
-  });
-
-  // ---------- START LOOP ----------
-  let lastSpawn = 0;
-  requestAnimationFrame(function tick(){
-    last = performance.now()/1000;
-    loop();
-  });
-
-  // small helper to play tone externally
-  function playTone(f,t,g,type='sine'){ playTone; try{ if(!audioCtx) ensureAudio(); const o=audioCtx.createOscillator(); const gg=audioCtx.createGain(); o.type=type; o.frequency.value=f; gg.gain.value=g; o.connect(gg); gg.connect(audioCtx.destination); o.start(); gg.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t); setTimeout(()=>{ try{o.stop()}catch(e){} }, t*1000+20);}catch(e){} }
-
-  // Note: exported helper used earlier; fix small naming conflict
-  function playTone(freq,time,gain,type='sine'){ try{ if(!audioCtx) ensureAudio(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type=type; o.frequency.value=freq; g.gain.value=gain; o.connect(g); g.connect(audioCtx.destination); o.start(); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + time); setTimeout(()=>{ try{o.stop()}catch(e){} }, time*1000+20); }catch(e){} }
-
-  // small housekeeping to ensure loop variable exists
-  last = performance.now()/1000;
-  function loop(){
-    const nowT = performance.now()/1000;
-    const dt = Math.min(0.033, nowT - last); last = nowT;
-
-    if(running){
-      // spawn timer & difficulty scaling
-      lastSpawn += dt;
-      const elapsed = SURVIVE_TARGET - timeLeft;
-      const progress = clamp(elapsed / SURVIVE_TARGET, 0, 1);
-      const curSpawn = clamp(START_SPAWN_INTERVAL * (1 - progress*0.75), MIN_SPAWN_INTERVAL, START_SPAWN_INTERVAL);
-      if(lastSpawn >= curSpawn){
-        lastSpawn = 0;
-        // spawn from hive left or right or top (mix)
-        const hSide = Math.random();
-        let hx = (hSide < 0.45) ? 140 : (hSide < 0.9 ? W-140 : W*0.5);
-        let hy = (hSide < 0.9) ? 80 : 40;
-        // occasionally spawn cluster
-        const cluster = Math.random() < 0.18 + progress*0.25;
-        const count = cluster ? (2 + Math.floor(progress*2)) : 1;
-        for(let i=0;i<count;i++) spawnBee(hx + rnd(-10,10), hy + rnd(-10,10), START_BEE_SPEED + (MAX_BEE_SPEED-START_BEE_SPEED)*progress);
-      }
-
-      // update bees
-      for(let i=bees.length-1;i>=0;i--){
-        const b = bees[i];
-        // slight steering toward cow
-        const dx = cowPos.x - b.x + rnd(-40,40)*progress;
-        const dy = cowPos.y - b.y + rnd(-20,20)*progress;
-        const len = Math.hypot(dx,dy)||1;
-        const targetSpeed = START_BEE_SPEED + (MAX_BEE_SPEED-START_BEE_SPEED)*progress;
-        const desiredVx = (dx/len)*targetSpeed;
-        const desiredVy = (dy/len)*targetSpeed;
-        b.vx += (desiredVx - b.vx) * 0.05;
-        b.vy += (desiredVy - b.vy) * 0.05;
-
-        b.x += b.vx * dt;
-        b.y += b.vy * dt;
-
-        handleBeeLineCollision(b);
-
-        const dCow = Math.hypot(b.x - cowPos.x, b.y - cowPos.y);
-        if(dCow < COW_RADIUS + b.r - 2){
-          if(!rayBlockedByAnyLine(b)){
-            running = false;
-            showEnd(false);
-            stingSound();
-            return;
-          } else {
-            b.vx *= -0.35; b.vy *= -0.35;
-          }
-        }
-
-        if(b.x < -120 || b.x > W+120 || b.y < -120 || b.y > H+120) bees.splice(i,1);
-      }
-
-      // prune old lines
-      const tnow = now();
-      lines = lines.filter(L => (tnow - L.created) < LINE_LIFE);
-
-      // decrement timer
-      timeLeft -= dt;
-      timerBadge.textContent = `Time: ${Math.max(0,timeLeft).toFixed(1)}s`;
-      levelBadge.textContent = `Difficulty: ${Math.round(progress*100)}%`;
-      if(timeLeft <= 0){
-        running = false;
-        showEnd(true);
-        winSound();
-        return;
-      }
-    }
-
-    draw();
-    requestAnimationFrame(loop);
-  }
-
-  // small utility functions already defined above used here
-  function rayBlockedByAnyLine(b){
-    const A = {x: b.x, y: b.y}, B = {x: cowPos.x, y: cowPos.y};
-    for(const L of lines){
-      const pts = L.points;
-      for(let i=0;i<pts.length-1;i++){
-        if(segmentsIntersect(A,B, pts[i], pts[i+1])) return true;
-      }
-    }
-    return false;
-  }
-
-  // final draw wrapper (overwrites previous draw due to scoping)
-  function draw(){
-    // simple background
-    const g = ctx.createLinearGradient(0,0,W,H); g.addColorStop(0,'#07323f'); g.addColorStop(1,'#041a24');
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-
-    // ground strip
-    ctx.fillStyle = '#0b6b3a'; ctx.fillRect(0, H-90, W, 90);
-
-    // draw hives
-    drawHive(140, 88);
-    drawHive(W-140, 88);
-
-    // draw lines
-    ctx.lineWidth = LINE_THICK; ctx.lineCap='round'; ctx.lineJoin='round';
-    for(const L of lines){
-      const age = now() - L.created;
-      const alpha = clamp(1 - (age / LINE_LIFE), 0, 1);
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#fffefc';
-      ctx.beginPath();
-      const pts = L.points; ctx.moveTo(pts[0].x, pts[0].y);
-      for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    // draw current stroke
-    if(currentStroke.length > 0){
-      ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 0.95;
-      ctx.beginPath(); ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
-      for(let i=1;i<currentStroke.length;i++) ctx.lineTo(currentStroke[i].x, currentStroke[i].y);
-      ctx.stroke(); ctx.globalAlpha = 1;
-    }
-
-    // draw bees
-    for(const b of bees) drawBee(b);
-
-    // draw cow
-    drawCow();
-
-    // top-left overlay
-    ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(12,12,260,36);
-  }
-
-  function drawHive(x,y){
-    ctx.save();
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath(); ctx.ellipse(x, y, 40, 30, 0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#78350f'; ctx.fillRect(x-16, y+6, 32, 12);
-    ctx.fillStyle = '#fde047'; ctx.font = '12px system-ui'; ctx.fillText('Hive', x-18, y-36);
-    ctx.restore();
-  }
-
-  function drawBee(b){
-    ctx.save(); ctx.translate(b.x, b.y);
-    ctx.beginPath(); ctx.fillStyle = '#fde047'; ctx.arc(0,0,b.r,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#111827'; ctx.fillRect(-b.r*0.34, -b.r*0.6, b.r*0.68, b.r*0.45);
-    ctx.globalAlpha = 0.88; ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.beginPath(); ctx.ellipse(-b.r*0.62, -b.r*0.98, b.r*0.42, b.r*0.18, 0,0,Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(b.r*0.12, -b.r*0.98, b.r*0.42, b.r*0.18, 0,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-
-  function drawCow(){
-    const cx = cowPos.x, cy = cowPos.y;
-    ctx.save();
-    ctx.globalAlpha = 1;
-    // shadow
-    ctx.globalAlpha = 0.26; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(cx, cy+32, 44, 12, 0,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
-    // body
-    ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx-42, cy-48, 84, 48);
-    // spots
-    ctx.fillStyle = '#111827'; ctx.fillRect(cx-16, cy-36, 16, 10); ctx.fillRect(cx+12, cy-28, 12, 8);
-    // head
-    ctx.fillStyle = '#fffaf0'; ctx.fillRect(cx+42, cy-44, 26, 22);
-    ctx.fillStyle = '#111827'; ctx.fillRect(cx+50, cy-36, 5,5);
-    ctx.fillStyle = '#f9a8d4'; ctx.fillRect(cx+44, cy-22, 12, 8);
-    // legs
-    ctx.fillStyle = '#e5e7eb'; ctx.fillRect(cx-36, cy+2, 12, 14); ctx.fillRect(cx+18, cy+2, 12, 14);
-    // lamumu band
-    ctx.fillStyle = 'var(--lam)'; ctx.fillRect(cx-42, cy-56, 84, 8);
-    ctx.fillStyle = '#fde047'; ctx.fillRect(cx-2, cy-50, 10, 12);
-    ctx.restore();
-  }
-
-  // helper small functions used above
-  function spawnBee(x,y,speed){
-    if(bees.length >= MAX_BEES) return;
-    const ang = Math.atan2((cowPos.y - y), (cowPos.x - x)) + rnd(-0.6, 0.6);
-    const sp = speed * rnd(0.9, 1.15);
-    bees.push({ x: x + rnd(-6,6), y: y + rnd(-6,6), vx: Math.cos(ang)*sp, vy: Math.sin(ang)*sp, r: BEE_RADIUS });
-    beeBuzz();
-  }
-
-  // expose little sound wrappers used earlier
-  function beeBuzz(){ try{ playTone(180,0.12,0.02,'square'); }catch(e){} }
-  function popSound(){ try{ playTone(420,0.06,0.03,'sine'); }catch(e){} }
-  function stingSound(){ try{ playTone(160,0.22,0.12,'sine'); }catch(e){} }
-  function winSound(){ try{ playTone(520,0.12,0.06,'sine'); setTimeout(()=>playTone(680,0.08,0.05,'sine'),140); }catch(e){} }
-
-  // start initial draw
-  draw();
-  requestAnimationFrame(loop);
-
-})();
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Game elements
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const startBtn = document.getElementById('start-btn');
+            const restartBtn = document.getElementById('restart-btn');
+            const muteBtn = document.getElementById('mute-btn');
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            const levelInfo = document.getElementById('level-info');
+            const timerElement = document.getElementById('timer');
+            const resultMessage = document.getElementById('result-message');
+            const winText = document.querySelector('.win-text');
+            const loseText = document.querySelector('.lose-text');
+            
+            // Game variables
+            let currentLevel = 1;
+            let score = 0;
+            let gameActive = false;
+            let isDrawing = false;
+            let lastX, lastY;
+            let drawnLines = [];
+            let bees = [];
+            let rocks = [];
+            let soundEnabled = true;
+            let gameTimer;
+            let timeLeft = 30;
+            
+            // Level configurations
+            const levels = [
+                { bees: 5, rocks: 0, beeSpeed: 2 },
+                { bees: 8, rocks: 2, beeSpeed: 2.5 },
+                { bees: 12, rocks: 3, beeSpeed: 3 },
+                { bees: 15, rocks: 4, beeSpeed: 3.5 },
+                { bees: 20, rocks: 5, beeSpeed: 4 }
+            ];
+            
+            // Sound effects
+            const buzzSound = new Audio();
+            buzzSound.src = "data:audio/wav;base64,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";
+            buzzSound.loop = true;
+            
+            const mooSound = new Audio();
+            mooSound.src = "data:audio/wav;base64,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";
+            
+            const winSound = new Audio();
+            winSound.src = "data:audio/wav;base64,UklGRqQGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YoAGAACBhYqFbVtfdJivrJBhNjVgodDbq2EcBj+a2/LDci0GHIHO8tiJNQYVaL/v5aQ+Bb2hEQAAAIuTlYFwYFdSWGt8hY2RlJmdoaOmpJqSioJ6dGxkXFZSTklEQDw5NjQyMS8uLSwqKSgnJiUkIyIhIB8eHRwaGRgXFRQTERAPDg0MCgkIBwYFBAMCAQAAACH5BAkAAAEALAAAAAAQABAAAAVaYFgApJGcRMAsMAxGoxkPp0EwOBrO5xMKLUOjJcDZfDibTacD0oQ6nE2n0wFpQh3OptPpgDShDmfT6XRAmlCHs+l0OiBNqMPZdDodkCbU4Ww6nQ5IE+pwNp1OB6QJdTibTqcD0oQ6nE2n0wFpQh3OptPpgDShDmfT6XRA";
+            
+            const loseSound = new Audio();
+            loseSound.src = "data:audio/wav;base64,UklGRqQGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YoAGAACBhYqFbVtfdJivrJBhNjVgodDbq2EcBj+a2/LDci0GHIHO8tiJNQYVaL/v5aQ+Bb2hEQAAAIuTlYFwYFdSWGt8hY2RlJmdoaOmpJqSioJ6dGxkXFZSTklEQDw5NjQyMS8uLSwqKSgnJiUkIyIhIB8eHRwaGRgXFRQTERAPDg0MCgkIBwYFBAMCAQAAACH5BAkAAAEALAAAAAAQABAAAAVaYFgApJGcRMAsMAxGoxkPp0EwOBrO5xMKLUOjJcDZfDibTacD0oQ6nE2n0wFpQh3OptPpgDShDmfT6XRAmlCHs+l0OiBNqMPZdDodkCbU4Ww6nQ5IE+pwNp1OB6QJdTibTqcD0oQ6nE2n0wFpQh3OptPpgDShDmfT6XRA";
+            
+            // Event listeners
+            startBtn.addEventListener('click', startGame);
+            restartBtn.addEventListener('click', restartGame);
+            muteBtn.addEventListener('click', toggleSound);
+            
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+            
+            // Touch events for mobile
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            canvas.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                const mouseEvent = new MouseEvent('mouseup');
+                canvas.dispatchEvent(mouseEvent);
+            });
+            
+            // Game functions
+            function startGame() {
+                startScreen.style.display = 'none';
+                gameScreen.style.display = 'block';
+                gameActive = true;
+                currentLevel = 1;
+                score = 0;
+                timeLeft = 30;
+                updateTimer();
+                initLevel();
+                gameLoop();
+                if (soundEnabled) {
+                    buzzSound.play();
+                }
+                
+                // Start the game timer
+                clearInterval(gameTimer);
+                gameTimer = setInterval(function() {
+                    timeLeft--;
+                    updateTimer();
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(gameTimer);
+                        levelComplete();
+                    }
+                }, 1000);
+            }
+            
+            function restartGame() {
+                gameOverScreen.style.display = 'none';
+                gameScreen.style.display = 'block';
+                gameActive = true;
+                currentLevel = 1;
+                score = 0;
+                timeLeft = 30;
+                updateTimer();
+                drawnLines = [];
+                bees = [];
+                rocks = [];
+                initLevel();
+                gameLoop();
+                if (soundEnabled) {
+                    buzzSound.play();
+                }
+                
+                // Start the game timer
+                clearInterval(gameTimer);
+                gameTimer = setInterval(function() {
+                    timeLeft--;
+                    updateTimer();
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(gameTimer);
+                        levelComplete();
+                    }
+                }, 1000);
+            }
+            
+            function updateTimer() {
+                timerElement.textContent = `Time: ${timeLeft}s`;
+            }
+            
+            function toggleSound() {
+                soundEnabled = !soundEnabled;
+                muteBtn.textContent = soundEnabled ? 'Sound: ON' : 'Sound: OFF';
+                
+                if (!soundEnabled) {
+                    buzzSound.pause();
+                    mooSound.pause();
+                } else if (gameActive) {
+                    buzzSound.play();
+                }
+            }
+            
+            function initLevel() {
+                // Clear previous level
+                bees = [];
+                rocks = [];
+                drawnLines = [];
+                
+                // Set level info
+                levelInfo.textContent = `Level: ${currentLevel}`;
+                
+                const levelConfig = levels[currentLevel - 1];
+                
+                // Create bees - but they won't attack until player draws a line
+                for (let i = 0; i < levelConfig.bees; i++) {
+                    bees.push({
+                        x: 400 + Math.random() * 100 - 50,
+                        y: 50 + Math.random() * 50,
+                        speed: levelConfig.beeSpeed + Math.random() * 1.5,
+                        targetX: 400,
+                        targetY: 500,
+                        hit: false,
+                        active: false // Bees start inactive
+                    });
+                }
+                
+                // Create rocks
+                for (let i = 0; i < levelConfig.rocks; i++) {
+                    rocks.push({
+                        x: Math.random() * 700 + 50,
+                        y: 200 + Math.random() * 300,
+                        width: 30 + Math.random() * 40,
+                        height: 20 + Math.random() * 30
+                    });
+                }
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            
+            function startDrawing(e) {
+                if (!gameActive) return;
+                
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                lastX = e.clientX - rect.left;
+                lastY = e.clientY - rect.top;
+                
+                // Start a new line
+                drawnLines.push([]);
+                
+                // Activate all bees when player starts drawing
+                for (const bee of bees) {
+                    bee.active = true;
+                }
+            }
+            
+            function draw(e) {
+                if (!isDrawing) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const currentX = e.clientX - rect.left;
+                const currentY = e.clientY - rect.top;
+                
+                // Draw on canvas
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(currentX, currentY);
+                ctx.strokeStyle = '#2196F3';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.closePath();
+                
+                // Store the line segment
+                drawnLines[drawnLines.length - 1].push({
+                    x1: lastX,
+                    y1: lastY,
+                    x2: currentX,
+                    y2: currentY
+                });
+                
+                lastX = currentX;
+                lastY = currentY;
+            }
+            
+            function stopDrawing() {
+                isDrawing = false;
+            }
+            
+            function gameLoop() {
+                if (!gameActive) return;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw rocks
+                ctx.fillStyle = '#78909C';
+                for (const rock of rocks) {
+                    ctx.beginPath();
+                    ctx.ellipse(rock.x, rock.y, rock.width/2, rock.height/2, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Draw all lines
+                ctx.beginPath();
+                ctx.strokeStyle = '#2196F3';
+                ctx.lineWidth = 3;
+                
+                for (const line of drawnLines) {
+                    for (const segment of line) {
+                        ctx.moveTo(segment.x1, segment.y1);
+                        ctx.lineTo(segment.x2, segment.y2);
+                    }
+                }
+                ctx.stroke();
+                
+                // Update and draw bees
+                let allBeesHit = true;
+                
+                for (const bee of bees) {
+                    if (bee.hit || !bee.active) continue;
+                    
+                    allBeesHit = false;
+                    
+                    // Move bee towards cow
+                    const dx = bee.targetX - bee.x;
+                    const dy = bee.targetY - bee.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    bee.x += (dx / dist) * bee.speed;
+                    bee.y += (dy / dist) * bee.speed;
+                    
+                    // Check if bee hit a line
+                    let hitLine = false;
+                    for (const line of drawnLines) {
+                        for (const segment of line) {
+                            if (lineIntersect(bee.x, bee.y, bee.x, bee.y, segment.x1, segment.y1, segment.x2, segment.y2)) {
+                                hitLine = true;
+                                break;
+                            }
+                        }
+                        if (hitLine) break;
+                    }
+                    
+                    // If bee hit a line, mark it as hit and make it fall
+                    if (hitLine) {
+                        bee.hit = true;
+                        bee.speed = 1; // Fall slowly
+                        if (soundEnabled) {
+                            mooSound.currentTime = 0;
+                            mooSound.play();
+                        }
+                    }
+                    
+                    // Draw bee
+                    ctx.beginPath();
+                    ctx.arc(bee.x, bee.y, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = bee.hit ? '#999' : '#FFC107';
+                    ctx.fill();
+                    
+                    // Draw bee stripes
+                    if (!bee.hit) {
+                        ctx.beginPath();
+                        ctx.moveTo(bee.x - 6, bee.y);
+                        ctx.lineTo(bee.x + 6, bee.y);
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(bee.x - 5, bee.y - 4);
+                        ctx.lineTo(bee.x + 5, bee.y - 4);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(bee.x - 5, bee.y + 4);
+                        ctx.lineTo(bee.x + 5, bee.y + 4);
+                        ctx.stroke();
+                    }
+                    
+                    // Draw bee wings
+                    ctx.beginPath();
+                    ctx.arc(bee.x - 4, bee.y - 6, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.fill();
+                    
+                    ctx.beginPath();
+                    ctx.arc(bee.x + 4, bee.y - 6, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Check if bee reached the cow
+                    if (bee.y > 530 && !bee.hit) {
+                        gameOver(false);
+                        return;
+                    }
+                }
+                
+                requestAnimationFrame(gameLoop);
+            }
+            
+            function levelComplete() {
+                score += currentLevel * 100;
+                
+                if (currentLevel >= levels.length) {
+                    gameOver(true);
+                } else {
+                    currentLevel++;
+                    timeLeft = 30;
+                    updateTimer();
+                    initLevel();
+                    
+                    // Restart the timer for the next level
+                    clearInterval(gameTimer);
+                    gameTimer = setInterval(function() {
+                        timeLeft--;
+                        updateTimer();
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(gameTimer);
+                            levelComplete();
+                        }
+                    }, 1000);
+                }
+            }
+            
+            function gameOver(isWin) {
+                gameActive = false;
+                clearInterval(gameTimer);
+                buzzSound.pause();
+                
+                if (isWin) {
+                    winText.style.display = 'block';
+                    loseText.style.display = 'none';
+                    resultMessage.textContent = `You protected the cow! Final Score: ${score}`;
+                    if (soundEnabled) winSound.play();
+                } else {
+                    winText.style.display = 'none';
+                    loseText.style.display = 'block';
+                    resultMessage.textContent = `The bees got the cow! Score: ${score}`;
+                    if (soundEnabled) loseSound.play();
+                }
+                
+                gameScreen.style.display = 'none';
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            // Helper function to check line intersection
+            function lineIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+                const den = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+                if (den === 0) return false;
+                
+                const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / den;
+                const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / den;
+                
+                return ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1;
+            }
+        });
+    </script>
 </body>
 </html>
